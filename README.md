@@ -1,1 +1,1 @@
-# jenny-cooders-deloitte-UABTheHack
+# jenny-coders-deloitte-UABTheHack
