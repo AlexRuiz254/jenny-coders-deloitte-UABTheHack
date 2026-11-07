@@ -1,13 +1,13 @@
 # src/interficie/api.py
 import uuid, datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from .repository import SQLiteTicketRepository
+from .repository import TicketRepository   
 
-repo = SQLiteTicketRepository()
+repo = TicketRepository()                 
 
 app = FastAPI(title="Demo Triage API")
 
@@ -15,7 +15,6 @@ class Alert(BaseModel):
     alert_id: str
     severity: str
     description: Optional[str] = None   # ← usa Optional
-
 
 @app.post("/process")
 def process_alert(alert: Alert):
@@ -26,12 +25,14 @@ def process_alert(alert: Alert):
         "created_at": datetime.datetime.utcnow().isoformat() + "Z",
         "details": alert.dict(),
     }
-
-    try:
-        repo.add(ticket)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al escribir el ticket en SQLite: {e}"
-        )
+    # Guardamos sin traza (por ahora)
+    repo.save(ticket, trace=[])
     return ticket
+
+
+@app.get("/tickets", response_model=List[Dict[str, Any]])
+def list_tickets(limit: int = 25):
+    """
+    Devuelve los `limit` tickets más recientes.
+    """
+    return repo.list_recent(limit=limit)
