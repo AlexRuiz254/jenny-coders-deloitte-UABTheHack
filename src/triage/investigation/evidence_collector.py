@@ -1,31 +1,15 @@
+"""Recoge eventos referenciados y consultas adicionales a 18 fuentes de logs."""
+from tarvia_soc.models import Evidence, RawAlert, SearchPlan
+from tarvia_soc.data.soc_api_client import SOCAPIClient
+
 class EvidenceCollector:
+    def __init__(self, api: SOCAPIClient) -> None:
+        raise NotImplementedError
 
-    def collect_related_events(self, alert):
-        ...
+    def collect_related_events(self, alert: RawAlert) -> list[Evidence]:
+        """Resolver prefijos EDR/EML/CT/... y comprobar event_id exacto."""
+        raise NotImplementedError
 
-    def resolve_event_source(self, event_id):
-        ...
-
-    def search_by_entity(self, entity, sources, start, end):
-        ...
-
-    def search_by_session(self, session_id, sources, start, end):
-        ...
-
-    def search_by_message(self, message_id, start, end):
-        ...
-
-    def search_time_window(self, source, query, start, end):
-        ...
-
-    def filter_exact_matches(self, events, field, value):
-        ...
-
-    def expand_time_window(self, start, end):
-        ...
-
-    def deduplicate_events(self, events):
-        ...
-
-    def detect_missing_or_truncated_results(self, response):
-        ...
+    def search(self, plan: SearchPlan) -> list[Evidence]:
+        """Ejecutar búsquedas, deduplicar, controlar límites y truncamientos."""
+        raise NotImplementedError

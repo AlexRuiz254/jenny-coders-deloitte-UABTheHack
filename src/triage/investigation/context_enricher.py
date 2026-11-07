@@ -1,28 +1,12 @@
+"""Contexto de activo/usuario/cambios y criticidad de negocio."""
+from tarvia_soc.models import RawAlert, EntityKeys, ContextSnapshot
+from tarvia_soc.data.soc_api_client import SOCAPIClient
+from tarvia_soc.data.reference_repository import ReferenceRepository
+
 class ContextEnricher:
+    def __init__(self, api: SOCAPIClient, references: ReferenceRepository) -> None:
+        raise NotImplementedError
 
-    def enrich(self, alert):
-        ...
-
-    def resolve_assets(self, entities):
-        ...
-
-    def resolve_users(self, entities):
-        ...
-
-    def resolve_business_services(self, assets):
-        ...
-
-    def resolve_network_zones(self, entities):
-        ...
-
-    def get_vulnerabilities(self, assets):
-        ...
-
-    def find_relevant_changes(self, alert, entities):
-        ...
-
-    def match_approved_activity(self, alert, changes):
-        ...
-
-    def determine_asset_criticality(self, context):
-        ...
+    def enrich(self, alert: RawAlert, entities: EntityKeys) -> ContextSnapshot:
+        """Resolver activos/usuarios/vulnerabilidades/servicios/zonas/cambios/RRHH."""
+        raise NotImplementedError

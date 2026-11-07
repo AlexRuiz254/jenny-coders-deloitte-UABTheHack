@@ -1,22 +1,8 @@
+"""Comprobar que el veredicto propuesto por el LLM está respaldado por pruebas."""
+from tarvia_soc.models import Analysis, Evidence, ContextSnapshot, VerdictDecision
+
 class VerdictEngine:
-
-    def decide(self, investigation_result):
-        ...
-
-    def assess_evidence_strength(self, findings):
-        ...
-
-    def evaluate_authorized_activity(self, findings, context):
-        ...
-
-    def evaluate_malicious_activity(self, findings):
-        ...
-
-    def evaluate_false_positive(self, findings):
-        ...
-
-    def calculate_confidence(self, findings, uncertainty):
-        ...
-
-    def validate_verdict_consistency(self, decision):
-        ...
+    def decide(self, analysis: Analysis, evidence: list[Evidence],
+               context: ContextSnapshot) -> VerdictDecision:
+        """Verificar referencias, contradicciones y actividad autorizada."""
+        raise NotImplementedError

@@ -1,31 +1,8 @@
+"""Escalado obligatorio y SLA conforme a politica_soc.md."""
+from tarvia_soc.models import Analysis, VerdictDecision, SeverityDecision, Escalation, RawAlert
+
 class EscalationEngine:
-
-    def decide(self, verdict, severity, findings):
-        ...
-
-    def check_mandatory_escalation(self, findings):
-        ...
-
-    def check_credential_compromise(self, findings):
-        ...
-
-    def check_malware_execution(self, findings):
-        ...
-
-    def check_persistence(self, findings):
-        ...
-
-    def check_data_exfiltration(self, findings):
-        ...
-
-    def check_financial_fraud(self, findings):
-        ...
-
-    def check_attack_chain(self, findings):
-        ...
-
-    def calculate_sla(self, severity, created_at):
-        ...
-
-    def determine_notification_targets(self, decision):
-        ...
+    def decide(self, analysis: Analysis, verdict: VerdictDecision,
+               severity: SeverityDecision, related_alerts: list[RawAlert]) -> Escalation:
+        """Escalar TP high/critical, malware ejecutado, fraude, DLP, cadena, etc."""
+        raise NotImplementedError

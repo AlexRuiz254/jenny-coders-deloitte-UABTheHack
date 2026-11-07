@@ -1,22 +1,23 @@
+"""Persistencia de tickets y traza local; no existe POST /tickets en la API SOC."""
+from typing import Any
+from tarvia_soc.models import Ticket
+
 class TicketRepository:
+    def __init__(self, db_path: str = "tickets.sqlite3") -> None:
+        raise NotImplementedError
 
-    def save_ticket(self, ticket):
-        ...
+    def save(self, ticket: Ticket, trace: list[dict[str, Any]]) -> None:
+        """Guardar ticket y operaciones de investigación realizadas."""
+        raise NotImplementedError
 
-    def get_ticket(self, ticket_id):
-        ...
+    def get(self, ticket_id: str) -> dict[str, Any] | None:
+        """Recuperar ticket, traza y estado de revisión."""
+        raise NotImplementedError
 
-    def get_ticket_by_alert(self, alert_id):
-        ...
+    def list_recent(self, limit: int = 25) -> list[dict[str, Any]]:
+        """Listar tickets para el dashboard."""
+        raise NotImplementedError
 
-    def update_status(self, ticket_id, status):
-        ...
-
-    def save_investigation_trace(self, ticket_id, trace):
-        ...
-
-    def list_tickets(self, status=None):
-        ...
-
-    def save_human_review(self, ticket_id, review):
-        ...
+    def save_review(self, ticket_id: str, decision: str, note: str) -> None:
+        """Registrar cierre/escalado humano, sin ejecutar contención."""
+        raise NotImplementedError
