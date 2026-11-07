@@ -1,11 +1,12 @@
 """Punto único de entrada; coordina pasos, iteraciones y resultados."""
 from collections.abc import Callable
+from datetime import datetime, timezone
 from time import perf_counter
 from typing import Any
 from src.triage.models import Ticket
 from src.data.soc_api_client import SOCAPIClient
 from src.data.reference_repository import ReferenceRepository
-from src.data.ticket_repository import TicketRepository
+from src.interficie.repository import SQLiteTicketRepository
 from src.triage.ingestion.entities import extract_entities, extract_indicators
 from src.triage.investigation.runbook_registry import RunbookRegistry
 from src.triage.investigation.context_enricher import ContextEnricher
@@ -33,7 +34,7 @@ class TriageOrchestrator:
                  escalation: EscalationEngine,
                  actions: ActionRecommender,
                  tickets: TicketBuilder,
-                 store: TicketRepository) -> None:
+                 store: SQLiteTicketRepository) -> None:
         """Recibir dependencias; ninguna lógica de negocio aquí."""
         self.api = api
         self.references = references
@@ -151,8 +152,20 @@ class TriageOrchestrator:
             intel=intel, triage_seconds=perf_counter() - started
         )
         ticket = Ticket.model_validate(ticket)
-        # Si save falla, el error se propaga sin anunciar completed ni devolver ticket.
-        call("save_ticket", self.store.save, ticket=ticket, trace=trace)
+        # Adaptar el Ticket al sobre del repositorio, sin perder su JSON ni la traza.
+        record = {
+            "id": ticket.ticket_id,
+            "alert_id": alert["alert_id"],
+            "status": "new",  # Estado de revisión, independiente del veredicto.
+            "created_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "details": {
+                "ticket": ticket.model_dump(mode="json", exclude_none=True),
+                "trace": trace,
+            },
+        }
+        # add serializa la traza tras anunciar save_ticket y confirma el commit.
+        # Si falla, el error se propaga sin anunciar completed ni devolver ticket.
+        call("save_ticket", self.store.add, record)
         emit("completed")
         return ticket
 
@@ -176,18 +189,15 @@ def _main() -> None:
         "--dataset-root", type=Path,
         default=Path(__file__).resolve().parents[2] / "RepositoriDeloitte"
     )
-    parser.add_argument("--db-path", default="tickets.sqlite3")
+    parser.add_argument(
+        "--db-path", help="Ruta SQLite; por defecto se usa data/tickets.db del proyecto"
+    )
     args = parser.parse_args()
 
     api = SOCAPIClient(base_url=args.api_url)
     try:
         references = ReferenceRepository(args.dataset_root)
-        # No sustituir un repositorio pendiente por una persistencia ficticia.
-        try:
-            store = TicketRepository(db_path=args.db_path)
-        except NotImplementedError as exc:
-            exc.add_note("Dependencia pendiente: TicketRepository.__init__.")
-            raise
+        store = SQLiteTicketRepository(db_path=args.db_path)
         service = TriageOrchestrator(
             api=api, references=references,
             runbooks=RunbookRegistry(args.dataset_root / "01_contexto" / "runbooks"),
