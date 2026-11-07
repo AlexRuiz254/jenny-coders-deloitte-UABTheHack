@@ -4,7 +4,12 @@ from src.triage.models import (
 )
 
 class SeverityCalculator:
-    def calculate(self, alert: RawAlert, context: ContextSnapshot,
-                  analysis: Analysis, verdict: VerdictDecision) -> SeverityDecision:
+    def calculate(
+            self, alert: RawAlert,
+            context: ContextSnapshot,
+            analysis: Analysis,
+            verdict: VerdictDecision
+    ) -> SeverityDecision:
         """Cruce severidad regla/criticidad y excepciones autorizadas."""
-        raise NotImplementedError
+
+        severidadRegla = alert["severity"]
