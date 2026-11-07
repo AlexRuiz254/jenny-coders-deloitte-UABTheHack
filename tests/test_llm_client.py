@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -11,6 +12,14 @@ import requests
 import src  # noqa: F401 - Registra el alias tarvia_soc -> src.triage
 from src.triage.llm import DEFAULT_ORNITH_API_URL, LLMClient
 from src.triage.models import Analysis, LogQuery, SearchPlan
+
+
+@pytest.fixture()
+def system_prompt_file(tmp_path: Path) -> Path:
+    """Crea un archivo temporal con las instrucciones de sistema para las pruebas."""
+    prompt_path = tmp_path / "system_prompt.md"
+    prompt_path.write_text("Eres un analista SOC N1.", encoding="utf-8")
+    return prompt_path
 
 
 def _make_mock_response(
@@ -121,14 +130,14 @@ def test_client_raises_error_when_api_key_missing(monkeypatch: pytest.MonkeyPatc
         LLMClient(model="uncensored")
 
 
-# 3. Generación correcta de texto
-def test_generate_text_success() -> None:
+# 3. Generación correcta de texto leyendo system_prompt desde ruta de archivo
+def test_generate_text_success(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     mock_resp = _make_mock_response(content="Resumen del incidente SOC N1.")
 
     with patch.object(client.session, "post", return_value=mock_resp) as mock_post:
         result = client.generate_text(
-            system_prompt="Eres un analista SOC N1.",
+            system_prompt=str(system_prompt_file),
             prompt="Resume la alerta ALT-001.",
         )
 
@@ -147,8 +156,16 @@ def test_generate_text_success() -> None:
     )
 
 
+def test_missing_system_prompt_file_raises_file_not_found(tmp_path: Path) -> None:
+    client = LLMClient(model="uncensored", api_key="test-key")
+    nonexistent = tmp_path / "no_existe.md"
+
+    with pytest.raises(FileNotFoundError):
+        client.generate_text(system_prompt=nonexistent, prompt="Hola")
+
+
 # 4. Generación correcta de JSON
-def test_generate_json_returns_pydantic_instance() -> None:
+def test_generate_json_returns_pydantic_instance(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     payload_dict = {
         "searches": [
@@ -165,7 +182,7 @@ def test_generate_json_returns_pydantic_instance() -> None:
 
     with patch.object(client.session, "post", return_value=mock_resp):
         result = client.generate_json(
-            system_prompt="Planifica búsquedas de logs.",
+            system_prompt=system_prompt_file,
             prompt="Alerta en WKST-042.",
             schema=SearchPlan,
         )
@@ -178,14 +195,14 @@ def test_generate_json_returns_pydantic_instance() -> None:
 
 
 # 5. Comprobación de que se utiliza response_format=json_object
-def test_generate_json_uses_json_object_response_format() -> None:
+def test_generate_json_uses_json_object_response_format(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     payload_dict = {"searches": []}
     mock_resp = _make_mock_response(content=json.dumps(payload_dict))
 
     with patch.object(client.session, "post", return_value=mock_resp) as mock_post:
         client.generate_json(
-            system_prompt="Sistema",
+            system_prompt=system_prompt_file,
             prompt="Usuario",
             schema=SearchPlan,
         )
@@ -196,14 +213,17 @@ def test_generate_json_uses_json_object_response_format() -> None:
 
 
 # 6. Comprobación de que se incluye el JSON Schema Pydantic en las instrucciones
-def test_generate_json_includes_pydantic_json_schema_in_instructions() -> None:
+def test_generate_json_includes_pydantic_json_schema_in_instructions(tmp_path: Path) -> None:
+    prompt_file = tmp_path / "instrucciones_soc.txt"
+    prompt_file.write_text("Instrucción base del SOC.", encoding="utf-8")
+
     client = LLMClient(model="uncensored", api_key="test-key")
     payload_dict = {"searches": []}
     mock_resp = _make_mock_response(content=json.dumps(payload_dict))
 
     with patch.object(client.session, "post", return_value=mock_resp) as mock_post:
         client.generate_json(
-            system_prompt="Instrucción base del SOC.",
+            system_prompt=prompt_file,
             prompt="Consulta del analista.",
             schema=SearchPlan,
         )
@@ -220,14 +240,14 @@ def test_generate_json_includes_pydantic_json_schema_in_instructions() -> None:
 
 
 # 7. Validación de todos los campos del modelo recibido
-def test_generate_json_validates_all_fields_of_analysis_model() -> None:
+def test_generate_json_validates_all_fields_of_analysis_model(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     analysis_data = _valid_analysis_dict()
     mock_resp = _make_mock_response(content=json.dumps(analysis_data))
 
     with patch.object(client.session, "post", return_value=mock_resp):
         analysis = client.generate_json(
-            system_prompt="Analiza la alerta siguiendo el runbook.",
+            system_prompt=system_prompt_file,
             prompt="Evidencias recopiladas...",
             schema=Analysis,
         )
@@ -248,7 +268,7 @@ def test_generate_json_validates_all_fields_of_analysis_model() -> None:
 
 
 # 8. Respuesta JSON mal formada
-def test_generate_json_raises_on_malformed_json_after_retry() -> None:
+def test_generate_json_raises_on_malformed_json_after_retry(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     bad_resp_1 = _make_mock_response(content="{json mal formado sin cerrar")
     bad_resp_2 = _make_mock_response(content="Sigue sin ser un JSON válido")
@@ -256,7 +276,7 @@ def test_generate_json_raises_on_malformed_json_after_retry() -> None:
     with patch.object(client.session, "post", side_effect=[bad_resp_1, bad_resp_2]) as mock_post:
         with pytest.raises(ValueError, match="no cumple el esquema Pydantic"):
             client.generate_json(
-                system_prompt="Sistema",
+                system_prompt=system_prompt_file,
                 prompt="Usuario",
                 schema=SearchPlan,
             )
@@ -265,7 +285,7 @@ def test_generate_json_raises_on_malformed_json_after_retry() -> None:
 
 
 # 9. Respuesta con campos obligatorios ausentes
-def test_generate_json_raises_when_required_fields_missing_after_retry() -> None:
+def test_generate_json_raises_when_required_fields_missing_after_retry(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     incomplete_json = json.dumps({"title": "Solo título, faltan campos obligatorios"})
     resp_1 = _make_mock_response(content=incomplete_json)
@@ -274,7 +294,7 @@ def test_generate_json_raises_when_required_fields_missing_after_retry() -> None
     with patch.object(client.session, "post", side_effect=[resp_1, resp_2]) as mock_post:
         with pytest.raises(ValueError, match="Analysis"):
             client.generate_json(
-                system_prompt="Sistema",
+                system_prompt=system_prompt_file,
                 prompt="Analiza la alerta",
                 schema=Analysis,
             )
@@ -283,14 +303,14 @@ def test_generate_json_raises_when_required_fields_missing_after_retry() -> None
 
 
 # 10. API key incorrecta (HTTP 401)
-def test_invalid_api_key_raises_401_without_leaking_key() -> None:
+def test_invalid_api_key_raises_401_without_leaking_key(system_prompt_file: Path) -> None:
     secret_key = "ornith-super-secret-key-do-not-leak"
     client = LLMClient(model="uncensored", api_key=secret_key)
     resp_401 = _make_mock_response(status_code=401)
 
     with patch.object(client.session, "post", return_value=resp_401):
         with pytest.raises(RuntimeError) as exc_info:
-            client.generate_text(system_prompt="Sys", prompt="Prompt")
+            client.generate_text(system_prompt=system_prompt_file, prompt="Prompt")
 
     error_msg = str(exc_info.value)
     assert "401" in error_msg
@@ -298,17 +318,17 @@ def test_invalid_api_key_raises_401_without_leaking_key() -> None:
 
 
 # 11. Saldo insuficiente (HTTP 402)
-def test_insufficient_balance_raises_402() -> None:
+def test_insufficient_balance_raises_402(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     resp_402 = _make_mock_response(status_code=402)
 
     with patch.object(client.session, "post", return_value=resp_402):
         with pytest.raises(RuntimeError, match="402"):
-            client.generate_text(system_prompt="Sys", prompt="Prompt")
+            client.generate_text(system_prompt=system_prompt_file, prompt="Prompt")
 
 
 # 12. Timeout
-def test_timeout_raises_timeout_error() -> None:
+def test_timeout_raises_timeout_error(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
 
     with patch.object(
@@ -317,11 +337,11 @@ def test_timeout_raises_timeout_error() -> None:
         side_effect=requests.exceptions.Timeout("Read timed out"),
     ):
         with pytest.raises(TimeoutError, match="timeout"):
-            client.generate_text(system_prompt="Sys", prompt="Prompt")
+            client.generate_text(system_prompt=system_prompt_file, prompt="Prompt")
 
 
 # 13. Segundo intento cuando falla la validación JSON
-def test_generate_json_succeeds_on_second_attempt_after_validation_failure() -> None:
+def test_generate_json_succeeds_on_second_attempt_after_validation_failure(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
 
     # Primer intento: falta 'verdict', 'signals', etc. y 'confidence' fuera de rango
@@ -338,7 +358,7 @@ def test_generate_json_succeeds_on_second_attempt_after_validation_failure() -> 
 
     with patch.object(client.session, "post", side_effect=[resp_1, resp_2]) as mock_post:
         result = client.generate_json(
-            system_prompt="Analiza la alerta.",
+            system_prompt=system_prompt_file,
             prompt="Datos de la alerta...",
             schema=Analysis,
         )
@@ -356,7 +376,7 @@ def test_generate_json_succeeds_on_second_attempt_after_validation_failure() -> 
 
 
 # Pruebas adicionales de robustez (429/503 con reintento y respuesta vacía)
-def test_transient_429_and_503_retries_and_recovers() -> None:
+def test_transient_429_and_503_retries_and_recovers(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     client.retry_delay = 0.0
 
@@ -365,16 +385,16 @@ def test_transient_429_and_503_retries_and_recovers() -> None:
     resp_200 = _make_mock_response(content="Respuesta tras reintentos")
 
     with patch.object(client.session, "post", side_effect=[resp_429, resp_503, resp_200]) as mock_post:
-        text = client.generate_text(system_prompt="Sys", prompt="Hola")
+        text = client.generate_text(system_prompt=system_prompt_file, prompt="Hola")
 
     assert text == "Respuesta tras reintentos"
     assert mock_post.call_count == 3
 
 
-def test_empty_response_raises_value_error() -> None:
+def test_empty_response_raises_value_error(system_prompt_file: Path) -> None:
     client = LLMClient(model="uncensored", api_key="test-key")
     empty_resp = _make_mock_response(content="   ")
 
     with patch.object(client.session, "post", return_value=empty_resp):
         with pytest.raises(ValueError, match="vacía"):
-            client.generate_text(system_prompt="Sys", prompt="Hola")
+            client.generate_text(system_prompt=system_prompt_file, prompt="Hola")

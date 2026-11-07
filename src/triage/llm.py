@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from pathlib import Path
 from typing import Any, TypeVar
 
 import requests
@@ -58,16 +59,17 @@ class LLMClient:
     def generate_text(
         self,
         *,
-        system_prompt: str,
+        system_prompt: str | Path,
         prompt: str,
     ) -> str:
-        """Envía una consulta de texto al modelo de Ornith y devuelve el contenido generado."""
+        """Envía una consulta de texto leyendo system_prompt desde un archivo y devuelve el contenido generado."""
+        system_content = self._load_system_prompt(system_prompt)
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {
                     "role": "system",
-                    "content": system_prompt,
+                    "content": system_content,
                 },
                 {
                     "role": "user",
@@ -80,17 +82,18 @@ class LLMClient:
     def generate_json(
         self,
         *,
-        system_prompt: str,
+        system_prompt: str | Path,
         prompt: str,
         schema: type[StructuredT],
     ) -> StructuredT:
-        """Genera una respuesta JSON estructurada y validada contra un esquema Pydantic."""
+        """Genera una respuesta JSON estructurada leyendo system_prompt desde un archivo y validando con Pydantic."""
         if not isinstance(schema, type) or not issubclass(schema, BaseModel):
             raise TypeError("El parámetro 'schema' debe ser una subclase de pydantic.BaseModel.")
 
+        system_content = self._load_system_prompt(system_prompt)
         json_schema = schema.model_json_schema()
         base_system_instructions = self._build_json_system_prompt(
-            system_prompt=system_prompt,
+            system_prompt=system_content,
             json_schema=json_schema,
         )
 
@@ -152,6 +155,21 @@ class LLMClient:
             f"La respuesta del modelo no cumple el esquema Pydantic '{schema.__name__}' "
             f"tras 2 intentos. Último error: {last_error}"
         ) from last_error
+
+    @staticmethod
+    def _load_system_prompt(system_prompt: str | Path) -> str:
+        """Lee y valida el contenido del archivo de system_prompt."""
+        path = Path(system_prompt)
+        if not path.is_file():
+            raise FileNotFoundError(
+                f"No se encontró el archivo de system_prompt en la ruta: {path}"
+            )
+        content = path.read_text(encoding="utf-8").strip()
+        if not content:
+            raise ValueError(
+                f"El archivo de system_prompt está vacío: {path}"
+            )
+        return content
 
     @staticmethod
     def _build_json_system_prompt(
