@@ -1,0 +1,16 @@
+class RunbookRegistry:
+
+    def get_runbook_for_rule(self, rule_id):
+        ...
+
+    def get_runbook(self, runbook_id):
+        ...
+
+    def get_strategy(self, runbook_id):
+        ...
+
+    def verify_rule_mapping(self, alert):
+        ...
+
+    def get_generic_strategy(self):
+        ...

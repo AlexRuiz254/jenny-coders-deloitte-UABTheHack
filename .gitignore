@@ -1,1 +1,115 @@
+# Gitignore genérico
+
+# ==========================================
+# PYTHON
+# ==========================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Build y distribución
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
+
+# ==========================================
+# ENTORNOS VIRTUALES
+# ==========================================
+
+venv/
+.venv/
+env/
+.env/
+ENV/
+.python-version
+
+# ==========================================
+# VARIABLES DE ENTORNO Y API KEYS
+# ==========================================
+
 .env
+.env.*
+!.env.example
+!.env.template
+
+# Credenciales y secretos
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+service-account*.json
+
+# ==========================================
+# IDEs Y EDITORES
+# ==========================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# TESTING Y COVERAGE
+# ==========================================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+test-results/
+
+# ==========================================
+# LINTERS Y TYPE CHECKING
+# ==========================================
+
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+.dmypy.json
+
+# ==========================================
+# JUPYTER NOTEBOOKS
+# ==========================================
+
+.ipynb_checkpoints/
+
+# ==========================================
+# LOGS Y ARCHIVOS TEMPORALES
+# ==========================================
+
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.bak
+.cache/
+
+# ==========================================
+# BASES DE DATOS LOCALES
+# ==========================================
+
+*.sqlite
+*.sqlite3
+*.db
+
+# ==========================================
+# SISTEMA OPERATIVO
+# ==========================================
+
+.DS_Store
+Thumbs.db
+Desktop.ini

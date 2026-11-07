@@ -1,0 +1,19 @@
+class AlertCorrelator:
+
+    def find_related_alerts(self, alert, window_hours=24):
+        ...
+
+    def compare_entities(self, alert_a, alert_b):
+        ...
+
+    def compare_time_proximity(self, alert_a, alert_b):
+        ...
+
+    def compare_indicators(self, alert_a, alert_b):
+        ...
+
+    def calculate_relationship_score(self, alert_a, alert_b):
+        ...
+
+    def suggest_grouping(self, alerts):
+        ...

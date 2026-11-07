@@ -1,0 +1,19 @@
+class AuditLogger:
+
+    def record_step(self, investigation_id, step):
+        ...
+
+    def record_tool_call(self, investigation_id, tool, params):
+        ...
+
+    def record_tool_result(self, investigation_id, result_summary):
+        ...
+
+    def record_finding(self, investigation_id, finding):
+        ...
+
+    def record_decision(self, investigation_id, decision):
+        ...
+
+    def record_error(self, investigation_id, error):
+        ...

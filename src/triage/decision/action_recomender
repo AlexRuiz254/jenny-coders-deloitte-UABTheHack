@@ -1,0 +1,19 @@
+class ActionRecommender:
+
+    def recommend(self, verdict, severity, findings, context):
+        ...
+
+    def get_supported_actions(self):
+        ...
+
+    def determine_target(self, action, findings):
+        ...
+
+    def requires_approval(self, action, target, context):
+        ...
+
+    def check_business_impact(self, action, target, context):
+        ...
+
+    def validate_action_policy(self, action, target, context):
+        ...
