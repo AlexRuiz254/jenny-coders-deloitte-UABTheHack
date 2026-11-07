@@ -2,7 +2,7 @@ from typing import Any
 from urllib.parse import quote
 
 import requests
-from tarvia_soc.models import LogSource, RawAlert
+from src.triage.models import LogSource, RawAlert
 
 
 class SOCAPIClient:
@@ -85,11 +85,12 @@ class SOCAPIClient:
             "rule_id": rule_id
         })
 
-    def get_alert(self, alert_id: str) -> RawAlert:
-        """GET /alerts/{alert_id}."""
+    def get_alert(self, alert_id: str) -> RawAlert | None:
+        """GET /alerts/{alert_id}; 404 devuelve None."""
 
         return self._get(
-            f"/alerts/{self._encode(alert_id)}"
+            f"/alerts/{self._encode(alert_id)}",
+            allow_404=True
         )
 
     def get_asset(self, key: str) -> dict[str, Any] | None:
@@ -118,21 +119,26 @@ class SOCAPIClient:
         if not 1 <= limit <= 2000:
             raise ValueError("limit debe estar entre 1 y 2000")
 
-        return self._get(
+        result = self._get(
             f"/logs/{self._encode(source)}",
             {
                 "q": q,
                 "desde": desde,
                 "hasta": hasta,
                 "limit": limit
-            }
+            },
+            allow_404=True
         )
+        return result if result is not None else {
+            "count": 0, "truncated": False, "items": []
+        }
 
-    def get_intel(self, indicator: str) -> dict[str, Any]:
-        """GET /intel/{indicator}."""
+    def get_intel(self, indicator: str) -> dict[str, Any] | None:
+        """GET /intel/{indicator}; 404 devuelve None."""
 
         return self._get(
-            f"/intel/{self._encode(indicator)}"
+            f"/intel/{self._encode(indicator)}",
+            allow_404=True
         )
 
     def get_sandbox(self, sha256: str) -> dict[str, Any] | None:
