@@ -1,23 +1,74 @@
-"""Persistencia de tickets y traza local; no existe POST /tickets en la API SOC."""
-from typing import Any
-from tarvia_soc.models import Ticket
+import json
+import sqlite3
+from pathlib import Path
+from typing import Dict, List, Any, Union
 
-class TicketRepository:
-    def __init__(self, db_path: str = "tickets.sqlite3") -> None:
-        raise NotImplementedError
 
-    def save(self, ticket: Ticket, trace: list[dict[str, Any]]) -> None:
-        """Guardar ticket y operaciones de investigación realizadas."""
-        raise NotImplementedError
+class SQLiteTicketRepository:
+    def __init__(self, db_path: Union[Path, str] = None):
+        if db_path is None:
+            db_path = Path(__file__).resolve().parents[2] / "data" / "tickets.db"
+        else:
+            db_path = Path(db_path)
 
-    def get(self, ticket_id: str) -> dict[str, Any] | None:
-        """Recuperar ticket, traza y estado de revisión."""
-        raise NotImplementedError
+        self.db_path = db_path
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._init_db()
 
-    def list_recent(self, limit: int = 25) -> list[dict[str, Any]]:
-        """Listar tickets para el dashboard."""
-        raise NotImplementedError
+    def _connect(self):
+        return sqlite3.connect(self.db_path)
 
-    def save_review(self, ticket_id: str, decision: str, note: str) -> None:
-        """Registrar cierre/escalado humano, sin ejecutar contención."""
-        raise NotImplementedError
+    def _init_db(self):
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS tickets (
+                    id TEXT PRIMARY KEY,
+                    alert_id TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    details TEXT NOT NULL
+                )
+                """
+            )
+            conn.commit()
+
+    def add(self, ticket: Dict[str, Any]) -> None:
+        """Insert a ticket into the DB."""
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO tickets (id, alert_id, status, created_at, details)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    ticket["id"],
+                    ticket["alert_id"],
+                    ticket["status"],
+                    ticket["created_at"],
+                    json.dumps(ticket["details"], ensure_ascii=False),
+                ),
+            )
+            conn.commit()
+
+    def all(self) -> List[Dict[str, Any]]:
+        with self._connect() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, alert_id, status, created_at, details FROM tickets"
+            )
+            rows = cur.fetchall()
+            tickets = []
+            for tid, aid, status, created, details_json in rows:
+                tickets.append(
+                    {
+                        "id": tid,
+                        "alert_id": aid,
+                        "status": status,
+                        "created_at": created,
+                        "details": json.loads(details_json),
+                    }
+                )
+            return tickets
