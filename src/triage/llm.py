@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import time
 from pathlib import Path
@@ -14,7 +15,7 @@ StructuredT = TypeVar("StructuredT", bound=BaseModel)
 
 DEFAULT_ORNITH_API_URL = "https://api.ornith.cc/v1"
 DEFAULT_ORNITH_MODEL = "uncensored"
-DEFAULT_TIMEOUT_SECONDS = 30.0
+DEFAULT_TIMEOUT_SECONDS = 120.0
 DEFAULT_MAX_RETRIES = 2
 DEFAULT_RETRY_DELAY_SECONDS = 0.5
 
@@ -30,7 +31,7 @@ class LLMClient:
         if not isinstance(model, str) or not model.strip():
             raise ValueError("El nombre del modelo no puede estar vacío.")
 
-        # TODO: Introducir aquí la API KEY de Ornith.
+        # Las credenciales solo se reciben por configuración, nunca en el código.
         resolved_api_key = (
             api_key if api_key is not None else os.getenv("ORNITH_API_KEY")
         )
@@ -44,7 +45,12 @@ class LLMClient:
         self.base_url: str = (
             os.getenv("ORNITH_API_URL") or DEFAULT_ORNITH_API_URL
         ).strip().rstrip("/")
-        self.timeout: float = DEFAULT_TIMEOUT_SECONDS
+        self.timeout = float(os.getenv("ORNITH_TIMEOUT_SECONDS") or DEFAULT_TIMEOUT_SECONDS)
+        if not math.isfinite(self.timeout) or self.timeout <= 0:
+            raise ValueError("ORNITH_TIMEOUT_SECONDS debe ser un número positivo y finito.")
+        self.reasoning_effort = (os.getenv("ORNITH_REASONING_EFFORT") or "").strip()
+        if self.reasoning_effort and self.reasoning_effort not in {"none", "low", "medium", "high"}:
+            raise ValueError("ORNITH_REASONING_EFFORT debe ser none, low, medium o high.")
         self.max_retries: int = DEFAULT_MAX_RETRIES
         self.retry_delay: float = DEFAULT_RETRY_DELAY_SECONDS
 
@@ -207,6 +213,8 @@ class LLMClient:
     def _request_completion(self, payload: dict[str, Any]) -> str:
         """Ejecuta la llamada POST /chat/completions contra Ornith y extrae choices[0].message.content."""
         url = f"{self.base_url}/chat/completions"
+        if self.reasoning_effort:
+            payload = {**payload, "reasoning_effort": self.reasoning_effort}
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -265,6 +273,11 @@ class LLMClient:
             if status_code == 402:
                 raise RuntimeError(
                     "Error HTTP 402 en Ornith: saldo insuficiente en la cuenta."
+                )
+            if status_code == 404:
+                raise RuntimeError(
+                    "Error HTTP 404 en el servidor de IA: revisa ORNITH_API_URL y ORNITH_MODEL. "
+                    "El modelo debe coincidir con uno de los identificadores de GET /models."
                 )
             if status_code == 429:
                 raise RuntimeError(

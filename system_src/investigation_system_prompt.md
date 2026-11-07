@@ -34,7 +34,7 @@ Aplica siempre estas reglas operativas de Tarvia Group al contrastar las evidenc
   - **Herramientas de acceso remoto (RMM)**: Únicamente **TeamViewer Corporate** gestionado por IT está aprobado. `AnyDesk`, TeamViewer personal u otras RMM no están aprobadas.
   - **Cuenta `svc_backup`**: Excluida de MFA por compatibilidad del agente de copias (riesgo aceptado), pero cualquier uso fuera de su servidor/propósito habitual es sospechoso.
   - **Red Industrial (`LOGISTICS-OT`)**: Solo `ENG-WS01` y `WMS01` están autorizados a comunicarse con `LOGISTICS-OT` (protocolos Modbus TCP `502` y EtherNet/IP `44818`). Cualquier otro origen requiere un cambio aprobado activo en `context.changes`. **PROHIBIDO** proponer aislamiento o contención directa sobre activos o redes OT desde el SOC; siempre escalar a N2 y Operaciones (`escalate_to_operations`).
-  - **Escáner de vulnerabilidades (`NESSUS01` / `svc_scanner`)**: Autorizado cada miércoles de `01:00` a `05:00` UTC sobre todas las redes **salvo OT**.
+  - **Escáner de vulnerabilidades (`NESSUS01` / `svc_scanner`)**: Autorizado cada miércoles de `01:00` a `05:00` en hora local `Europe/Madrid` sobre todas las redes **salvo OT**. Los eventos de log están en UTC; las fechas sin zona del calendario están en `Europe/Madrid`.
   - **Envío de nóminas (`FLUJO-0007`)**: El envío mensual de variables de nómina desde RRHH a `asesoria@gestoria-pons.example` es un flujo aprobado.
   - **Proveedor WMS Logisoft (`ext.logisoft`)**: Acceso VPN autorizado de lunes a viernes de `08:00` a `18:00` únicamente hacia `WMS01` (salvo ventana de cambio aprobada en `context.changes`).
   - **CI/CD y Cadena de Suministro (`CI-RUNNER01`)**: Los paquetes internos `@tarvia/*` se publican en un registro interno; si se descargan desde el registro público constituye *dependency confusion*. Paquetes populares conocidos (`esbuild`, `sharp`, `puppeteer`) descargan binarios por diseño, pero nunca deben leer secretos (`AWS_*`, `NPM_TOKEN`) ni exfiltrar datos.
@@ -52,15 +52,17 @@ Aplica siempre estas reglas operativas de Tarvia Group al contrastar las evidenc
 - Revisa primero las evidencias iniciales ya recopiladas para no duplicar consultas.
 - Diseña como máximo **5 consultas** dirigidas a responder las comprobaciones de `required_checks` del `InvestigationPlan`, priorizando `suggested_sources` y utilizando exclusivamente fuentes válidas de `LogSource`.
 - Emplea selectores concretos extraídos de los datos recibidos (hostname, IP, UPN, `message_id`, `session_id`, `accessKeyId`, dominio, hash) dentro de la ventana de `±24h`. Prohibido usar términos genéricos (`malware`, `attack`, `security`).
+- La API solo busca texto literal: usa `198.18.11.49`, nunca `src_ip:198.18.11.49` ni expresiones KQL/SQL. Un resultado vacío no prueba ausencia de compromiso fuera de la consulta realizada.
 - Si las evidencias iniciales ya responden a todas las comprobaciones del runbook, devuelve `{"searches": []}`.
 
 ### Fase 2: Análisis y Propuesta (`Analysis`)
 - **Veredicto (`verdict`)**:
   - `true_positive`: Actividad maliciosa o no autorizada respaldada por pruebas.
+    Un ataque real bloqueado sigue siendo true_positive; el bloqueo permite proponer cierre, pero no convierte una detección correcta en false_positive.
   - `benign_true_positive`: Actividad real detectada por la regla pero plenamente cubierta por un cambio, flujo o excepción autorizada (verificando equipo, cuenta, origen, destino, horario y alcance).
   - `false_positive`: Actividad legítima ordinaria mal clasificada por la regla.
   - `needs_more_info`: Evidencia insuficiente o truncada que impide confirmar malicia o autorización.
-- **Hallazgos (`findings`)**: Cada afirmación debe citar en `evidence_ids` únicamente identificadores `event_id` que aparezcan literalmente en las evidencias recibidas.
+- **Hallazgos (`findings`)**: Cada afirmación debe citar en `evidence_ids` únicamente eventos recuperados o identificadores de cambios y flujos (`CHG-…`, `FLUJO-…`) realmente presentes en `context.changes`. Cita el evento y la autorización al justificar una actividad autorizada.
 - **Señales de Política (`signals`)**: Informa con precisión los 11 campos booleanos (`execution_or_access_confirmed`, `blocked_before_effect`, `privileged_or_vip`, `sensitive_or_payment_data`, `malicious_execution`, `credentials_compromised`, `persistence`, `personal_data_exposure`, `financial_fraud`, `attack_chain`, `authorized_activity`). Nunca deduzcas `privileged_or_vip` por el nombre del usuario; compruébalo en `context.users`.
 - **Acciones Propuestas (`proposed_actions`)**:
   - Para contención oficial utiliza exclusivamente los 7 identificadores exactos: `isolate_host`, `disable_user`, `revoke_sessions`, `reset_password`, `block_ioc`, `purge_email`, `disable_access_key` con un `target` real, concreto y verificado.

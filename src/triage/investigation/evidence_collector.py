@@ -3,6 +3,7 @@ import json
 
 from src.triage.models import Evidence, RawAlert, SearchPlan
 from src.data.soc_api_client import SOCAPIClient
+from src.triage.time_windows import alert_window, api_time
 
 class EvidenceCollector:
     SOURCES = {
@@ -30,12 +31,14 @@ class EvidenceCollector:
         """Resolver prefijos EDR/EML/CT/... y comprobar event_id exacto."""
         evidence = []
         seen = set()
+        start, end = alert_window(alert)
         for event_id in alert.get("related_events", []):
             source = self.SOURCES.get(event_id.split("-", 1)[0].upper())
             if source is None or (source, event_id) in seen:
                 continue
             seen.add((source, event_id))
-            result = self.api.search_logs(source, q=event_id, limit=2000)
+            result = self.api.search_logs(source, q=event_id, desde=api_time(start),
+                                          hasta=api_time(end), limit=2000)
             for row in result.get("items", []):
                 # La API busca subcadenas: nunca aceptar un ID solo parecido.
                 if row.get("event_id") == event_id:

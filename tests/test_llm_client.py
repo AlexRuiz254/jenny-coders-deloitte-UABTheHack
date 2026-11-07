@@ -14,6 +14,37 @@ from src.triage.llm import DEFAULT_ORNITH_API_URL, LLMClient
 from src.triage.models import Analysis, LogQuery, SearchPlan
 
 
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
+def test_configured_timeout_must_be_positive_and_finite(monkeypatch, value):
+    monkeypatch.setenv("ORNITH_TIMEOUT_SECONDS", value)
+    with pytest.raises(ValueError, match="ORNITH_TIMEOUT_SECONDS"):
+        LLMClient(api_key="test-key")
+
+
+def test_configured_timeout_is_used(monkeypatch):
+    monkeypatch.setenv("ORNITH_TIMEOUT_SECONDS", "90")
+    assert LLMClient(api_key="test-key").timeout == 90
+
+
+@pytest.mark.parametrize("effort", ["", "none"])
+def test_reasoning_configuration_is_optional_and_forwarded(monkeypatch, system_prompt_file, effort):
+    monkeypatch.setenv("ORNITH_REASONING_EFFORT", effort)
+    client = LLMClient(api_key="test-key")
+    with patch.object(client.session, "post", return_value=_make_mock_response(content="OK")) as post:
+        assert client.generate_text(system_prompt=system_prompt_file, prompt="Prueba") == "OK"
+    payload = post.call_args.kwargs["json"]
+    if effort:
+        assert payload["reasoning_effort"] == effort
+    else:
+        assert "reasoning_effort" not in payload
+
+
+def test_invalid_reasoning_configuration_is_rejected(monkeypatch):
+    monkeypatch.setenv("ORNITH_REASONING_EFFORT", "invalid")
+    with pytest.raises(ValueError, match="ORNITH_REASONING_EFFORT"):
+        LLMClient(api_key="test-key")
+
+
 @pytest.fixture()
 def system_prompt_file(tmp_path: Path) -> Path:
     """Crea un archivo temporal con las instrucciones de sistema para las pruebas."""

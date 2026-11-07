@@ -1,5 +1,6 @@
 """Contexto de activo/usuario/cambios y criticidad de negocio."""
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from src.triage.models import RawAlert, EntityKeys, ContextSnapshot
 from src.data.soc_api_client import SOCAPIClient
@@ -53,10 +54,10 @@ class ContextEnricher:
                 snapshot.missing_lookups.append(f"store:{ip}")
 
         # Son candidatos del calendario, no una afirmación de que la alerta
-        # esté autorizada. Las fechas del dataset se expresan en UTC.
-        def parse_time(value: str) -> datetime:
+        # esté autorizada. Los logs están en UTC; el calendario, en hora de Madrid.
+        def parse_time(value: str, local_zone=timezone.utc) -> datetime:
             parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
+            return parsed.replace(tzinfo=local_zone) if parsed.tzinfo is None else parsed
 
         try:
             instant = parse_time(alert.get("created_at", ""))
@@ -65,7 +66,8 @@ class ContextEnricher:
         else:
             for change in self.api.get_changes():
                 try:
-                    active = parse_time(change["inicio"]) <= instant <= parse_time(change["fin"])
+                    active = (parse_time(change["inicio"], ZoneInfo("Europe/Madrid")) <= instant
+                              <= parse_time(change["fin"], ZoneInfo("Europe/Madrid")))
                 except (KeyError, ValueError):
                     snapshot.missing_lookups.append(f"change:{change.get('id', '')}")
                     continue

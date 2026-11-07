@@ -108,7 +108,8 @@ REGLAS DE PLANIFICACIÓN:
 4. Usa en `query` únicamente valores reales y específicos extraídos de la alerta, el contexto o las evidencias (hostname exacto, IP, UPN/username, dominio, hash, `message_id`, `session_id`, `accessKeyId`, etc.).
 5. PROHIBIDO usar consultas genéricas como `malware`, `attack`, `security`, `suspicious` o comodines `*`, así como inventar entidades o identificadores.
 6. Incluye en `reason` una justificación técnica concreta vinculada a la comprobación del runbook que se desea verificar.
-7. Evita consultas duplicadas y mantén las búsquedas acotadas a la ventana temporal de ±24 horas respecto a la creación de la alerta cuando especifiques `start` y `end`."""
+7. Evita consultas duplicadas y mantén las búsquedas acotadas a la ventana temporal de ±24 horas respecto a la creación de la alerta cuando especifiques `start` y `end`.
+8. La API busca una SUBCADENA LITERAL del JSON del evento. `query` debe ser solo el valor, por ejemplo `198.18.11.49` o `WS-BCN-1174`. No entiende KQL, SQL, `src_ip:198.18.11.49`, `hostname=...`, filtros de campos, AND/OR ni comodines. Una consulta con esa sintaxis devolvería falsos ceros."""
 
 ANALYSIS_PROMPT: str = """FASE 2 — ANÁLISIS ESTRUCTURADO DE LA INVESTIGACIÓN (Analysis)
 
@@ -119,20 +120,22 @@ Analizar todas las pruebas recopiladas siguiendo paso a paso el runbook oficial 
 - `true_positive`: Actividad maliciosa o no autorizada respaldada por evidencias concretas.
 - `benign_true_positive`: La detección es real, pero está demostrado en `context` que la actividad está autorizada y coincide exactamente en equipo, usuario/cuenta, origen/destino, horario y alcance.
 - `false_positive`: La regla interpretó erróneamente como sospechosa una actividad legítima normal.
+- Un ataque real bloqueado por WAF/EDR sigue siendo `true_positive`, aunque proceda cerrar por falta de impacto. Bloqueo o ausencia de compromiso NO significan `false_positive`; este último exige explicar qué actividad legítima confundió la regla.
 - `needs_more_info`: Las pruebas son insuficientes o inconclusas para confirmar malicia o legitimidad.
 - Ajusta `confidence` (entre 0.0 y 1.0) según la solidez y completitud real de las pruebas; no asignes valores altos automáticamente si existen lagunas o búsquedas truncadas.
 
 2. HALLAZGOS (`findings`) E INCERTIDUMBRES (`open_questions`):
-- Cada `Finding` debe describir un hecho verificable y citar en `evidence_ids` ÚNICAMENTE identificadores `event_id` que existan literalmente en la lista de evidencias recibida (`valid_event_ids`).
+- Cada `Finding` debe describir un hecho verificable y citar en `evidence_ids` ÚNICAMENTE identificadores de eventos recuperados o IDs de cambios y flujos de `context.changes` incluidos en `valid_event_ids`.
 - NUNCA inventes `evidence_ids` ni utilices IDs de alertas no presentes como si fueran `event_id`.
 - Si dos evidencias se contradicen, explica explícitamente la contradicción.
+- Cero resultados de una búsqueda solo significa que no se encontraron coincidencias en ESA fuente y consulta; no demuestra por sí solo ausencia de compromiso ni de actividad posterior en otras fuentes.
 - Registra en `open_questions` cualquier comprobación pendiente, falta de visibilidad o búsqueda truncada (`truncated: true`).
 
 3. SEÑALES DE POLÍTICA (`signals` — rellenar los 11 booleanos sin omitir ninguno):
 - `execution_or_access_confirmed`: `true` solo si hay prueba de que la ejecución, acceso o acción ocurrió realmente (no basta la mera alerta o intento fallido).
 - `blocked_before_effect`: `true` solo si existen pruebas explícitas de bloqueo preventivo antes de causar efecto y sin actividad posterior exitosa.
 - `privileged_or_vip`: `true` SOLO si la identidad afectada figura explícitamente como privilegiada (`privileged`) o VIP (`vip`) en `context.users`. NUNCA lo deduzcas a partir del nombre de usuario.
-- `sensitive_or_payment_data`: `true` si intervienen datos personales (RGPD/clientes/RRHH), datos financieros, pagos/TPV/PCI DSS o servicios críticos sensibles según evidencias o contexto.
+- `sensitive_or_payment_data`: `true` si las evidencias muestran datos personales, financieros o de pagos efectivamente implicados. Atacar una web que atiende clientes, sin acceso ni exposición de esos datos, no basta para activar esta señal.
 - `malicious_execution`: `true` solo si hay evidencia confirmada de ejecución de código, script o proceso malicioso (no por un fichero bloqueado que no llegó a ejecutarse).
 - `credentials_compromised`: `true` cuando hay evidencia de robo o uso ilegítimo confirmado de credenciales, cookies/tokens, claves o secretos (diferenciar del mero intento).
 - `persistence`: `true` cuando se confirma un mecanismo de persistencia no autorizado (registro, tarea, regla de buzón, app OAuth, usuario/clave IAM, web shell, etc.).
@@ -337,6 +340,9 @@ class InvestigationAgent:
         related_alerts: list[RawAlert],
     ) -> str:
         valid_event_ids = sorted({ev.event_id for ev in evidence if ev.event_id})
+        valid_event_ids = sorted(set(valid_event_ids) | {
+            change["id"] for change in context.changes if change.get("id")
+        })
         intel_dump = [item.model_dump() for item in intel]
         evidence_dump = [ev.model_dump() for ev in evidence]
 
@@ -376,6 +382,14 @@ class InvestigationAgent:
 
         for item in search_plan.searches:
             query_text = item.query.strip()
+            # Traducir el selector simple que a veces propone el LLM al contrato
+            # literal de la API; conservar intactas URLs e IPs IPv6.
+            selector = re.fullmatch(
+                r"(?:src_ip|dst_ip|ip|hostname|host|upn|username|user|session_id|message_id|accessKeyId|sha256|domain|url)\s*[:=]\s*(.+)",
+                query_text, re.IGNORECASE,
+            )
+            if selector:
+                query_text = selector.group(1).strip().strip('"')
             reason_text = item.reason.strip()
             if not query_text or not reason_text:
                 continue
@@ -414,6 +428,7 @@ class InvestigationAgent:
     ) -> Analysis:
         """Garantiza que los evidence_ids existan y que proposed_actions cumplan el contrato SOC."""
         valid_event_ids = {ev.event_id for ev in evidence if ev.event_id}
+        valid_event_ids.update(change["id"] for change in context.changes if change.get("id"))
 
         sanitized_findings: list[Finding] = []
         for finding in analysis.findings:

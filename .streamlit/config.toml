@@ -1,7 +1,8 @@
 # .streamlit/config.toml
 
 [server]
+address = "127.0.0.1"
 runOnSave = false          # evita recargas automáticas al guardar archivos
-enableWatchdog = false     # desactiva el watcher que dispara reruns innecesarios
+fileWatcherType = "none"  # evita vigilar el dataset completo
 enableCORS = false
 enableXsrfProtection = false

@@ -10,7 +10,8 @@ class SOCAPIClient:
     def __init__(
         self,
         base_url: str = "http://localhost:8000",
-        timeout: float = 30
+        timeout: float = 30,
+        store=None,
     ) -> None:
         """Preparar sesión HTTP sin importar mock_soc_api.py."""
 
@@ -19,6 +20,7 @@ class SOCAPIClient:
 
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.store = store
         self.session = requests.Session()
 
     def _get(
@@ -76,7 +78,7 @@ class SOCAPIClient:
         if offset < 0:
             raise ValueError("offset no puede ser negativo")
 
-        return self._get("/alerts", {
+        page = self._get("/alerts", {
             "status": status,
             "limit": limit,
             "offset": offset,
@@ -84,10 +86,22 @@ class SOCAPIClient:
             "hasta": hasta,
             "rule_id": rule_id
         })
+        if self.store is None:
+            return page
+        local = self.store.list_imported_alerts(status=status, rule_id=rule_id,
+                                                 desde=desde, hasta=hasta)
+        remote_total = page["total"]
+        local_start = max(0, offset - remote_total)
+        remaining = limit - len(page["items"])
+        return {"total": remote_total + len(local),
+                "items": [*page["items"], *local[local_start:local_start + remaining]]}
 
     def get_alert(self, alert_id: str) -> RawAlert | None:
         """GET /alerts/{alert_id}; 404 devuelve None."""
 
+        local = self.store.get_imported_alert(alert_id) if self.store is not None else None
+        if local is not None:
+            return local
         return self._get(
             f"/alerts/{self._encode(alert_id)}",
             allow_404=True

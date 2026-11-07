@@ -166,17 +166,15 @@ class AlertCorrelator:
             "urls",
         }
 
-        # 4. Consultar todos los estados de las alertas.
-        #
-        # IMPORTANTE: esto supone que la API acepta
-        # status="" como ausencia de filtro.
+        # El dataset original es inmutable: todas sus alertas tienen estado new.
+        # La API exige coincidencia exacta y status="" NO elimina el filtro.
         offset = 0
         page_size = 500
 
         while True:
 
             page = self.api.list_alerts(
-                status="",
+                status="new",
                 limit=page_size,
                 offset=offset,
                 desde=desde,

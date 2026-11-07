@@ -1,59 +1,27 @@
+"""Entrada anterior: investigar mediante el orquestador único y persistir en SQLite."""
 import json
-import logging
-import os
 from pathlib import Path
+import os
 
-log_path = os.path.join(Path(__file__).parents[2], ".streamlit", "streamlit.log")
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(log_path, encoding="utf-8")]
-)
+from dotenv import load_dotenv
+
+from src.data.soc_api_client import SOCAPIClient
+from src.data.ticket_repository import TicketRepository
+from src.triage.ingestion.imports import validate_alert
+from src.triage.triage_orchestrator import create_orchestrator
+
+
 class OrchestratorWrapper:
-
-    def __init__(self):
-        self.tickets_path = Path(__file__).parents[2] / "data" / "tickets.json"
-        logging.debug("[DEBUG] OrchestratorWrapper inicializado – tickets_path=%s", self.tickets_path)
-    def _load_tickets(self):
-        if self.tickets_path.is_file():
-            try:
-                with open(self.tickets_path, "r", encoding="utf-8") as f:
-                    lines = [json.loads(line) for line in f.readlines() if line.strip()]
-                logging.debug("[DEBUG] Cargados %d tickets del archivo", len(lines))
-                return lines
-            except Exception as e:
-                logging.exception("[ERROR] Falló al leer tickets.json")
-                return []
-        else:
-            logging.debug("[DEBUG] tickets.json no existe – se crea nuevo")
-            return []
-    def _save_ticket(self, ticket):
-        """Añade un ticket al archivo JSON‑Lines."""
-        try:
-            self.tickets_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.tickets_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(ticket, ensure_ascii=False) + "\n")
-            logging.debug("[DEBUG] Ticket guardado en %s", self.tickets_path)
-        except Exception as e:
-            logging.exception("[ERROR] No se pudo escribir el ticket")
     def process_alert(self, alert_json: str):
-        logging.debug("[DEBUG] process_alert recibido")
+        root = Path(__file__).resolve().parents[2]
+        load_dotenv(root / ".env")
+        store = TicketRepository(os.getenv("SOC_DB_PATH") or None)
+        api = SOCAPIClient(os.getenv("SOC_API_URL") or "http://127.0.0.1:8000", store=store)
         try:
-            alert = json.loads(alert_json)
-            logging.debug("[DEBUG] Alert parsed: %s", alert)
-        except json.JSONDecodeError as e:
-            logging.error("[ERROR] JSON inválido: %s", e)
-            return {"error": f"JSON inválido: {e}"}
-        import uuid, datetime
-        ticket = {
-            "id": str(uuid.uuid4()),
-            "alert_id": alert.get("alert_id", "UNKNOWN"),
-            "status": "new",
-            "created_at": datetime.datetime.utcnow().isoformat() + "Z",
-            "details": alert,
-        }
-        logging.debug("[DEBUG] Ticket generado: %s", ticket)
-        # Guardar en disco
-        self._save_ticket(ticket)
-        logging.info("[INFO] Ticket creado – ID: %s", ticket["id"])
-        return ticket
+            service = create_orchestrator(api, store)
+            alert = validate_alert(json.loads(alert_json), service.references)
+            if api.get_alert(alert["alert_id"]) is None:
+                store.import_alert(alert)
+            return service.run(alert["alert_id"]).model_dump(mode="json", exclude_none=True)
+        finally:
+            api.close()

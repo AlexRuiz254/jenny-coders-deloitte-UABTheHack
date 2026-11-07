@@ -69,6 +69,8 @@ htmlcov/
 .nox/
 coverage.xml
 test-results/
+.test-*/
+.test-*.txt
 
 # ==========================================
 # LINTERS Y TYPE CHECKING
