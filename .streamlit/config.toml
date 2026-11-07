@@ -1,0 +1,7 @@
+# .streamlit/config.toml
+
+[server]
+runOnSave = false          # evita recargas automáticas al guardar archivos
+enableWatchdog = false     # desactiva el watcher que dispara reruns innecesarios
+enableCORS = false
+enableXsrfProtection = false

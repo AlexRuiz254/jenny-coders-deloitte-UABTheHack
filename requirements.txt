@@ -1,7 +1,13 @@
 requests>=2.31.0
 pydantic>=2.0.0
+<<<<<<< HEAD
 fastapi>=0.110.0
 uvicorn>=0.29.0
 streamlit>=1.30.0
 python-dotenv>=1.0.0
 pytest>=8.0.0
+=======
+fastapi 
+uvicorn[standard] 
+streamlit
+>>>>>>> 26a30a1b93226d69c363384a74f9ea91286cbc72
