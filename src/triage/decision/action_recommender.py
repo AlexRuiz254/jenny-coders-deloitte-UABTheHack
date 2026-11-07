@@ -1,5 +1,5 @@
 """Proponer contención conforme a autorizaciones; nunca ejecutarla en N1."""
-from tarvia_soc.models import Analysis, ContextSnapshot, TicketAction
+from src.triage.models import Analysis, ContextSnapshot, TicketAction
 
 class ActionRecommender:
     def recommend(self, analysis: Analysis,
