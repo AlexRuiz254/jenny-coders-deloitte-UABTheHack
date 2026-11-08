@@ -1,4 +1,5 @@
 """Recoge eventos referenciados y consultas adicionales a 18 fuentes de logs."""
+import hashlib
 import json
 
 from src.triage.models import Evidence, RawAlert, SearchPlan
@@ -27,6 +28,18 @@ class EvidenceCollector:
             raw=row
         )
 
+    @staticmethod
+    def _query_summary(source: str, q: str, desde: str, hasta: str,
+                       result: dict, reason: str) -> Evidence:
+        identity = json.dumps([source, q, desde, hasta], ensure_ascii=False)
+        query_id = "QRY-" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+        return Evidence(source=source, raw={
+            "kind": "query_summary", "query_id": query_id,
+            "q": q, "desde": desde, "hasta": hasta, "reason": reason,
+            "count": result.get("count", len(result.get("items", []))),
+            "truncated": result.get("truncated"),
+        })
+
     def collect_related_events(self, alert: RawAlert) -> list[Evidence]:
         """Resolver prefijos EDR/EML/CT/... y comprobar event_id exacto."""
         evidence = []
@@ -44,11 +57,12 @@ class EvidenceCollector:
                 if row.get("event_id") == event_id:
                     evidence.append(self._event(source, row))
                     break
-            if result.get("truncated"):
-                evidence.append(Evidence(source=source, raw={
-                    "q": event_id, "count": result.get("count"),
-                    "truncated": result["truncated"]
-                }))
+            summary = self._query_summary(
+                source, event_id, api_time(start), api_time(end), result,
+                "Recuperar el evento referenciado por la alerta (ID exacto).",
+            )
+            summary.raw["exact_event_found"] = any(e.event_id == event_id for e in evidence)
+            evidence.append(summary)
         return evidence
 
     def search(self, plan: SearchPlan) -> list[Evidence]:
@@ -75,10 +89,8 @@ class EvidenceCollector:
                     evidence.append(self._event(query.source, row))
             # Evidence no tiene campos count/truncated. Conservarlos en raw
             # como resumen de consulta, sin asignarle un event_id ficticio.
-            metadata = {field: result[field] for field in ("count", "truncated") if field in result}
-            if metadata:
-                evidence.append(Evidence(source=query.source, raw={
-                    "q": query.query, "desde": query.start or "",
-                    "hasta": query.end or "", **metadata
-                }))
+            evidence.append(self._query_summary(
+                query.source, query.query, query.start or "", query.end or "",
+                result, query.reason,
+            ))
         return evidence

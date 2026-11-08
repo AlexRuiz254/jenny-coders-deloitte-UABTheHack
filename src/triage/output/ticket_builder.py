@@ -70,6 +70,11 @@ class TicketBuilder:
 
         ticket_evidence = self._build_evidence(analysis.findings, evidence)
         resolved_ids = {item.event_id for item in ticket_evidence}
+        resolved_ids.update(
+            item.raw["query_id"] for item in evidence
+            if not item.event_id and item.source and item.raw.get("kind") == "query_summary"
+            and item.raw.get("query_id") and "q" in item.raw
+        )
         open_questions = list(analysis.open_questions)
         references = dict.fromkeys(
             reference for finding in analysis.findings for reference in finding.evidence_ids
@@ -77,7 +82,7 @@ class TicketBuilder:
         for reference in references:
             if reference not in resolved_ids:
                 question = (
-                    f"Referencia sin evento disponible en las evidencias recibidas: {reference!r}. "
+                    f"Referencia sin evidencia disponible en las evidencias recibidas: {reference!r}. "
                     "Revisar su trazabilidad."
                 )
                 if question not in open_questions:
@@ -109,7 +114,7 @@ class TicketBuilder:
     def _build_evidence(
         self, findings: list[Finding], evidence: list[Evidence],
     ) -> list[TicketEvidence]:
-        """Vincular hallazgos a eventos recibidos, sin inventar referencias."""
+        """Vincular hallazgos a eventos, cambios y consultas sin inventar eventos."""
         by_id: dict[str, list[Evidence]] = {}
         for item in evidence:
             if item.event_id and item.source:
@@ -117,16 +122,47 @@ class TicketBuilder:
 
         result: list[TicketEvidence] = []
         seen: set[tuple[str, str, str]] = set()
+        statements_by_ref: dict[str, list[str]] = {}
         for finding in findings:
-            for event_id in finding.evidence_ids:
-                for item in by_id.get(event_id, []):
-                    key = (item.source, event_id, finding.statement)
+            for reference in finding.evidence_ids:
+                statements_by_ref.setdefault(reference, []).append(finding.statement)
+                for item in by_id.get(reference, []):
+                    key = (item.source, reference, finding.statement)
                     if key in seen:
                         continue
                     seen.add(key)
                     result.append(TicketEvidence(
                         source=item.source,
-                        event_id=event_id,
+                        event_id=item.event_id,
                         finding=finding.statement,
                     ))
+        # Resultados de consultas: observaciones reproducibles, sin event_id de log.
+        seen_queries = set()
+        for item in evidence:
+            raw = item.raw
+            if item.event_id or not item.source or "q" not in raw:
+                continue
+            key = (item.source, raw["q"], raw.get("desde"), raw.get("hasta"))
+            if key in seen_queries:
+                continue
+            seen_queries.add(key)
+            observation = (
+                f"Consulta {raw.get('query_id', '(sin ID)')} literal en {item.source}: q={raw['q']!r}; "
+                f"desde={raw.get('desde') or 'desconocido'}; hasta={raw.get('hasta') or 'desconocido'}; "
+                f"registros devueltos={raw.get('count', 'desconocido')}; "
+                f"truncated={raw.get('truncated', 'desconocido')}. "
+                "Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. "
+                "Si está truncada, el recuento no representa el total."
+            )
+            if raw.get("count") == 0:
+                observation += " No se encontraron coincidencias en esa consulta concreta."
+            if raw.get("reason"):
+                observation += f" Motivo: {raw['reason']}"
+            if "exact_event_found" in raw:
+                observation += f" Evento exacto recuperado={raw['exact_event_found']}."
+            if raw.get("kind") == "query_summary":
+                statements = dict.fromkeys(statements_by_ref.get(raw.get("query_id"), []))
+                if statements:
+                    observation += " Hallazgos relacionados: " + " ".join(statements)
+            result.append(TicketEvidence(source=item.source, finding=observation))
         return result
