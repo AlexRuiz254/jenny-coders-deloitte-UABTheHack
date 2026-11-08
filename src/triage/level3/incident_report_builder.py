@@ -1,543 +1,524 @@
+"""Informe N3: fusión de la presentación remota y los contratos con evidencias locales.
 
+Se acepta AttackReconstruction real y el contrato ReconstructionResult. Los IDs de
+supporting_evidence se resuelven con las fuentes explícitas de su cronología y
+después se verifican contra el bundle. ScopeAnalysis real se conserva como alcance
+no verificado: su interfaz actual no proporciona citas. No se inventan para
+confirmar o proponer hipótesis. ScopeResult mantiene el contrato con citas.
+
+La adaptación directa del builder conoce el ID del incidente. Level3Orchestrator
+valida ScopeResult antes de llamar al builder: ScopeAnalysis todavía necesita
+incident_id y citas/adaptación en esa frontera. Además, los consumidores de bundles
+deben acordar contexts (dict/list), EntityKeys y eventos Evidence frente a dicts.
+No se modifica ni parchea ninguno de esos módulos desde este archivo.
+
+Cada conclusión confirmada o hipotética debe citar source + event_id del bundle.
+La existencia de una cita permite trazabilidad; no demuestra que su interpretación
+sea correcta. Esa responsabilidad corresponde a los servicios y al analista.
+El esquema oficial permite propiedades adicionales: se usan para preservar
+evidencias, estados, limitaciones y trazabilidad sin alterar su contrato.
+"""
 from __future__ import annotations
 
+from functools import lru_cache
 import json
-import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal
 
-import jsonschema
-from pydantic import BaseModel, Field
+from jsonschema import Draft202012Validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.triage.level3.scope_analyzer import ScopeAnalysis, ScopeAnalyzer
+from src.triage.level3.investigation_expander import InvestigationBundle
+from src.triage.models import Evidence, Ticket
+from src.triage.time_windows import api_time, parse_utc
 
-logger = logging.getLogger(__name__)
+_CONFIG = ConfigDict(extra="forbid", strict=True)
+_SCHEMA_PATH = (Path(__file__).resolve().parents[3]
+                / "RepositoriDeloitte/01_contexto/informe_incidente.schema.json")
 
 
-class TimelineEntry(BaseModel):
-    """Entrada en la cronología de eventos del incidente."""
+class EvidenceReference(BaseModel):
+    model_config = _CONFIG
+    source: str = Field(min_length=1)
+    event_id: str = Field(min_length=1)
+
+
+class SupportedConclusion(BaseModel):
+    """statement es también el identificador para entradas de hosts/users/services."""
+    model_config = _CONFIG
+    statement: str | None = None
+    status: Literal["confirmed", "hypothesis", "unknown"] = "unknown"
+    evidence: list[EvidenceReference] = Field(default_factory=list)
+
+
+class TimelineEvent(BaseModel):
+    model_config = _CONFIG
     timestamp: str
-    event_id: str = ""
-    description: str
-    mitre: str = ""
+    description: str = Field(min_length=1)
+    status: Literal["confirmed", "hypothesis"] = "confirmed"
+    evidence: list[EvidenceReference]
+    event_id: str | None = None
+    mitre: str | None = None
+
+
+class RecommendedMeasure(BaseModel):
+    """Solo una propuesta; este módulo nunca ejecuta ni aprueba acciones."""
+    model_config = _CONFIG
+    action: str = Field(min_length=1)
+    target: str = Field(min_length=1)
+    justification: str = Field(min_length=1)
+    evidence: list[EvidenceReference] = Field(default_factory=list)
+    approver: str | None = None
+    business_impact: str | None = None
+    requires_approval: Literal[True] = True
+
+
+class ReconstructionResult(BaseModel):
+    """Datos esperados de AttackReconstructor, sin imponer su clase concreta."""
+    model_config = _CONFIG
+    undated_events: list[dict[str, Any]] = Field(default_factory=list)
+    native_details: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def from_reconstructor(cls, value: Any) -> Any:
+        return _adapt_reconstruction(value)
+
+    incident_id: str
+    patient_zero: SupportedConclusion = Field(default_factory=SupportedConclusion)
+    initial_access: SupportedConclusion = Field(default_factory=SupportedConclusion)
+    root_cause: SupportedConclusion = Field(default_factory=SupportedConclusion)
+    timeline: list[TimelineEvent] = Field(default_factory=list)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    open_questions: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
+class ScopeResult(BaseModel):
+    """Datos esperados de ScopeAnalyzer; no inferir compromiso de una coincidencia."""
+    model_config = _CONFIG
+    unverified_scope: dict[str, Any] = Field(default_factory=dict)
+    incident_id: str
+    hosts: list[SupportedConclusion] = Field(default_factory=list)
+    users: list[SupportedConclusion] = Field(default_factory=list)
+    services: list[SupportedConclusion] = Field(default_factory=list)
+    data: SupportedConclusion = Field(default_factory=SupportedConclusion)
+    business_impact: SupportedConclusion = Field(default_factory=SupportedConclusion)
+    containment_plan: list[RecommendedMeasure] = Field(default_factory=list)
+    eradication_and_recovery: list[str] = Field(default_factory=list)
+    notifications: list[str] = Field(default_factory=list)
+    detection_gaps: list[str] = Field(default_factory=list)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    open_questions: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
 
 
 class ScopeDetails(BaseModel):
-    """Alcance técnico y empresarial exigido por el esquema oficial."""
-    users: list[str] = Field(default_factory=list)
+    """Acceso por atributos y claves para los dos consumidores existentes."""
+    model_config = _CONFIG
     hosts: list[str] = Field(default_factory=list)
-    data: str = "Sin datos expuestos identificados"
-    business_impact: str = "Sin impacto empresarial identificado"
+    users: list[str] = Field(default_factory=list)
+    services: list[str] = Field(default_factory=list)
+    data: str = "No determinado con la evidencia disponible."
+    business_impact: str = "No determinado con la evidencia disponible."
+
+    def __getitem__(self, name: str) -> Any:
+        return getattr(self, name)
 
 
-class ContainmentAction(BaseModel):
-    """Acción de contención propuesta según la política SOC de Tarvia."""
-    action: str
-    target: str
-    approver: str
-    business_impact: str = ""
+# Nombres públicos de ambas ramas.
+TimelineEntry = TimelineEvent
+ContainmentAction = RecommendedMeasure
 
 
 class IncidentReport(BaseModel):
-    """Informe consolidado de incidente N3 conforme al esquema de Tarvia/Deloitte."""
-    incident_id: str
-    title: str
-    alert_ids: list[str]
-    patient_zero: str = "Desconocido / En investigación"
-    initial_access: str = "Desconocido / En investigación"
-    timeline: list[TimelineEntry] = Field(default_factory=list)
-    scope: ScopeDetails
-    root_cause: str = "En investigación"
-    containment_plan: list[ContainmentAction] = Field(default_factory=list)
-    # Campos opcionales del esquema oficial
-    related_incidents: Optional[list[str]] = None
-    eradication_and_recovery: Optional[list[str]] = None
-    notifications: Optional[list[str]] = None
-    detection_gaps: Optional[list[str]] = None
-    confidence: Optional[float] = None
-    open_questions: Optional[list[str]] = None
-    # Campos enriquecidos complementarios
-    summary: Optional[str] = None
-    impact_level: Optional[str] = None
-    affected_services: Optional[list[str]] = None
-    affected_network_zones: Optional[list[str]] = None
-    confirmed_findings: Optional[list[str]] = None
-    suspected_findings: Optional[list[str]] = None
-    soc_recommendations: Optional[list[str]] = None
-    investigation_limitations: Optional[list[str]] = None
+    """Campos oficiales y extensiones de trazabilidad admitidas por el esquema.
 
-    model_config = {"extra": "allow"}
+    Exportar con model_dump(mode='json', exclude_none=True) o model_dump_json
+    (exclude_none=True): el esquema oficial no permite null en campos opcionales.
+    La confianza de cada servicio queda en reconstruction/scope_analysis; no se
+    inventa una confianza global ni se transforma la confianza N2 en confianza N3.
+    """
+    model_config = _CONFIG
+    incident_id: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    alert_ids: list[str] = Field(min_length=1)
+    patient_zero: str
+    initial_access: str
+    timeline: list[TimelineEvent]
+    scope: ScopeDetails
+    root_cause: str
+    containment_plan: list[RecommendedMeasure]
+    related_incidents: list[str] = Field(default_factory=list)
+    eradication_and_recovery: list[str] = Field(default_factory=list)
+    notifications: list[str] = Field(default_factory=list)
+    detection_gaps: list[str] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+    summary: str
+    source_ticket_ids: list[str]
+    evidence: list[Evidence]
+    reconstruction: ReconstructionResult
+    scope_analysis: ScopeResult
+    potentially_affected: dict[str, list[str]]
+    related_incident_details: list[dict[str, Any]]
+    investigation_window: dict[str, str]
+    consulted_sources: list[str]
+    searches: list[dict[str, Any]]
+    limitations: list[str]
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    impact_level: str | None = None
+    affected_services: list[str] = Field(default_factory=list)
+    affected_network_zones: list[str] = Field(default_factory=list)
+    confirmed_findings: list[str] = Field(default_factory=list)
+    suspected_findings: list[str] = Field(default_factory=list)
+    soc_recommendations: list[str] = Field(default_factory=list)
+    investigation_limitations: list[str] = Field(default_factory=list)
+    unverified_findings: list[str] = Field(default_factory=list)
+    undated_events: list[dict[str, Any]] = Field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serializar a diccionario para validación o persistencia JSON."""
         return self.model_dump(mode="json", exclude_none=True)
 
 
-def _get_attr_or_key(obj: Any, name: str, default: Any = None) -> Any:
-    """Extraer un atributo o valor por clave de forma segura."""
-    if obj is None:
-        return default
-    if isinstance(obj, dict):
-        return obj.get(name, default)
-    return getattr(obj, name, default)
+def _payload(value: BaseModel | dict) -> dict:
+    if isinstance(value, BaseModel):
+        return value.model_dump(mode="json", exclude_none=True)
+    if not isinstance(value, dict):
+        raise TypeError("El resultado debe ser un modelo Pydantic o un dict")
+    return value
+
+
+
+def _adapt_reconstruction(value: Any) -> Any:
+    """Adaptar datos de AttackReconstruction conservando la salida original."""
+    if isinstance(value, BaseModel):
+        value = _payload(value)
+    if not isinstance(value, dict):
+        return value
+    native = ("attack_phases" in value or "related_entities" in value
+              or any("source" in row and "evidence" not in row for row in value.get("timeline", []))
+              or any(isinstance(value.get(key), str)
+                     or isinstance(value.get(key), dict) and "conclusion" in value[key]
+                     for key in ("patient_zero", "initial_access", "root_cause")))
+    if not native:
+        return value
+    raw = json.loads(json.dumps(value))
+    by_id: dict[str, set[str]] = {}
+    for row in raw.get("timeline", []):
+        if row.get("event_id") and row.get("source"):
+            by_id.setdefault(row["event_id"], set()).add(row["source"])
+
+    def reference(token: str) -> dict[str, str]:
+        matches = [(source, event_id) for event_id, sources in by_id.items() for source in sources
+                   if token in (event_id, f"{source}:{event_id}")]
+        if len(matches) != 1:
+            raise ValueError(f"Referencia de reconstrucción inexistente o ambigua: {token}")
+        source, event_id = matches[0]
+        return {"source": source, "event_id": event_id}
+
+    result: dict[str, Any] = {
+        "incident_id": raw.get("incident_id", ""), "native_details": raw,
+        "confidence": raw.get("confidence"), "open_questions": raw.get("uncertainties", raw.get("open_questions", [])),
+        "limitations": list(raw.get("uncertainties", [])), "timeline": [], "undated_events": [],
+    }
+    for key in ("patient_zero", "initial_access", "root_cause"):
+        conclusion = raw.get(key) or {}
+        if isinstance(conclusion, str):
+            result[key] = {}
+            result["limitations"].append(f"{key}: texto recibido sin estado ni referencias; no validado.")
+            continue
+        status = conclusion.get("status", "undetermined")
+        status = "unknown" if status == "undetermined" else status
+        refs = [reference(token) for token in conclusion.get("supporting_evidence", [])]
+        if status != "unknown" and not refs:
+            raise ValueError(f"{key}: una conclusión {status} requiere supporting_evidence")
+        result[key] = {"statement": conclusion.get("conclusion"), "status": status, "evidence": refs}
+    for row in raw.get("timeline", []):
+        if not row.get("event_id") or not row.get("source"):
+            result["limitations"].append("Evento sin referencia source/event_id; conservado en native_details.")
+            continue
+        refs = [reference(f"{row['source']}:{row['event_id']}")]
+        try:
+            parse_utc(row.get("timestamp"))
+        except (ValueError, TypeError, AttributeError):
+            result["undated_events"].append({**row, "evidence": refs})
+            result["limitations"].append(f"{row['event_id']}: fecha desconocida; no se inventa una posición temporal.")
+            continue
+        result["timeline"].append({
+            "timestamp": row["timestamp"], "description": row["description"], "status": "confirmed",
+            "evidence": refs, "event_id": row["event_id"], "mitre": row.get("mitre"),
+        })
+    return result
+
+
+def _scope_input(value: Any, incident_id: str) -> ScopeResult:
+    if value is None:
+        return ScopeResult(incident_id=incident_id, limitations=["No se ha aportado análisis de alcance."])
+    data = _payload(value)
+    if "affected_assets" not in data and "confirmed_findings" not in data:
+        return ScopeResult.model_validate(data)
+    if data.get("incident_id", incident_id) != incident_id:
+        raise ValueError("ScopeAnalysis pertenece a otro incidente")
+    # ScopeAnalysis no incluye ni incident_id ni referencias. Asociarlo aquí al
+    # incidente explícito no convierte sus afirmaciones en conclusiones verificadas.
+    return ScopeResult(
+        incident_id=incident_id, unverified_scope=data,
+        limitations=["ScopeAnalysis carece de referencias a evidencias: sus afirmaciones se conservan "
+                     "como datos no verificados, sin confirmar compromiso ni impacto."],
+        open_questions=data.get("unknowns", []),
+    )
+
+
+def _builder_inputs(incident: Any, bundle: Any) -> tuple[dict, InvestigationBundle]:
+    data = _payload(incident)
+    data = data.get("details", {}).get("ticket", data)
+    incident_id = data.get("ticket_id") or data.get("incident_id")
+    ids = data.get("alert_ids")
+    if (not isinstance(incident_id, str) or not incident_id.strip() or not isinstance(ids, list)
+            or not ids or any(not isinstance(key, str) or not key.strip() for key in ids)
+            or len(ids) != len(set(ids))):
+        raise ValueError("Se requiere el ID real del incidente y sus alert_ids únicos; no se generan IDs ficticios")
+    if isinstance(bundle, InvestigationBundle):
+        return data, bundle.model_copy(deep=True)
+    raw = dict(_payload(bundle))
+    raw.setdefault("incident_id", incident_id)
+    raw.setdefault("alert_ids", ids)
+    raw.setdefault("window", {})  # Ventana no suministrada; nunca una fecha artificial.
+    raw.setdefault("original_evidence", raw.get("evidence", []))
+    raw.setdefault("additional_evidence", raw.get("expanded_evidence", []))
+    raw.setdefault("source_tickets", raw.get("tickets", []))
+    for ticket in raw["source_tickets"]:
+        alert_ids = _payload(ticket).get("alert_ids", [])
+        if set(alert_ids) - set(ids):
+            raise ValueError("El bundle contiene tickets de alertas ajenas al incidente")
+    return data, InvestigationBundle.model_validate(raw)
+
+
+@lru_cache(maxsize=1)
+def incident_report_validator() -> Draft202012Validator:
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8-sig"))
+    Draft202012Validator.check_schema(schema)
+    return Draft202012Validator(schema)
+
+
+def validate_report(value: IncidentReport | dict) -> IncidentReport:
+    """Validar el JSON original antes de aplicar los valores por defecto locales."""
+    payload = _payload(value)
+    incident_report_validator().validate(payload)
+    report = IncidentReport.model_validate(payload)
+    if (not report.incident_id.strip() or not report.title.strip()
+            or any(not item.strip() for item in report.alert_ids)
+            or len(report.alert_ids) != len(set(report.alert_ids))):
+        raise ValueError("El informe debe identificar un incidente y alertas únicas no vacías")
+    if (report.reconstruction.incident_id != report.incident_id
+            or report.scope_analysis.incident_id != report.incident_id):
+        raise ValueError("El informe contiene resultados de otro incidente")
+    incident_report_validator().validate(report.model_dump(mode="json", exclude_none=True))
+    return report
 
 
 class IncidentReportBuilder:
-    """Constructor del informe final de N3 integrando todos los componentes."""
+    def __init__(self, schema_path: Path | str | None = None) -> None:
+        """El esquema oficial es obligatorio; un esquema adicional solo restringe."""
+        self.schema_path = Path(schema_path) if schema_path is not None else _SCHEMA_PATH
+        self._schema = json.loads(self.schema_path.read_text(encoding="utf-8-sig"))
+        Draft202012Validator.check_schema(self._schema)
+        self._validator = Draft202012Validator(self._schema)
 
-    def __init__(self, schema_path: Optional[Path | str] = None) -> None:
-        """Inicializar el builder con acceso opcional al esquema oficial."""
-        self.schema_path = Path(schema_path) if schema_path else self._locate_schema()
-        self._schema = self._load_schema()
+    def validate(self, report: IncidentReport | dict) -> None:
+        checked = validate_report(report)
+        self._validator.validate(checked.to_dict())
 
     @staticmethod
-    def _locate_schema() -> Optional[Path]:
-        """Localizar el esquema informe_incidente.schema.json en el repositorio."""
-        candidate = Path(__file__).resolve().parents[3] / "RepositoriDeloitte" / "01_contexto" / "informe_incidente.schema.json"
-        if candidate.exists():
-            return candidate
-        return None
+    def _text(conclusion: SupportedConclusion) -> str:
+        if conclusion.status == "unknown":
+            return "No determinado con la evidencia disponible." + (
+                f" {conclusion.statement}" if conclusion.statement else ""
+            )
+        label = "Confirmado" if conclusion.status == "confirmed" else "Hipótesis"
+        return f"{label}: {conclusion.statement}"
 
-    def _load_schema(self) -> Optional[dict[str, Any]]:
-        """Cargar el esquema JSON oficial si existe."""
-        if self.schema_path and self.schema_path.exists():
-            try:
-                with self.schema_path.open(encoding="utf-8") as stream:
-                    return json.load(stream)
-            except Exception as exc:
-                logger.warning("No se pudo cargar el esquema de informe: %s", exc)
-        return None
+    def build(self, incident: Ticket | BaseModel | dict, bundle: InvestigationBundle | BaseModel | dict,
+              reconstruction: ReconstructionResult | BaseModel | dict,
+              scope: ScopeResult | BaseModel | dict | None = None) -> IncidentReport:
+        """Formatear conclusiones aportadas, comprobar citas y validar el informe."""
+        incident_data, bundle = _builder_inputs(incident, bundle)
+        incident_id = incident_data.get("ticket_id") or incident_data["incident_id"]
+        for ticket in bundle.source_tickets:
+            if len(ticket.alert_ids) != 1 or set(ticket.alert_ids) - set(incident_data["alert_ids"]):
+                raise ValueError("Se requieren tickets N1 individuales del incidente, sin alertas ajenas")
+        reconstruction_data = dict(_payload(reconstruction))
+        reconstruction_data.setdefault("incident_id", incident_id)
+        # Una cronología antigua puede omitir source. Solo se completa si el ID
+        # identifica una única fuente real en el bundle; no se deduce del nombre.
+        observed_sources: dict[str, set[str]] = {}
+        for observed in [*bundle.original_evidence, *bundle.additional_evidence, *bundle.events]:
+            if observed.event_id:
+                observed_sources.setdefault(observed.event_id, set()).add(observed.source)
+        reconstruction_data = json.loads(json.dumps(reconstruction_data))
+        for row in reconstruction_data.get("timeline", []):
+            sources = observed_sources.get(row.get("event_id"), set())
+            if not row.get("source") and "evidence" not in row and len(sources) == 1:
+                row["source"] = next(iter(sources))
+        reconstruction = ReconstructionResult.model_validate(reconstruction_data)
+        if set(reconstruction.native_details.get("alert_ids", [])) - set(incident_data["alert_ids"]):
+            raise ValueError("La reconstrucción contiene alertas ajenas al incidente")
+        scope = _scope_input(scope, incident_id)
+        if (incident_id != bundle.incident_id
+                or set(incident_data["alert_ids"]) != set(bundle.alert_ids)
+                or len(bundle.alert_ids) != len(set(bundle.alert_ids))
+                or reconstruction.incident_id != bundle.incident_id
+                or scope.incident_id != bundle.incident_id):
+            raise ValueError("Incidente, bundle y resultados N3 deben identificar el mismo incidente")
 
-    def build(
-        self,
-        incident: Any,
-        bundle: Any,
-        reconstruction: Any,
-        scope: Optional[ScopeAnalysis] = None,
-    ) -> IncidentReport:
-        """Construir el informe final de incidente consolidando todos los módulos.
+        # El bundle es el conjunto de evidencias disponibles, no una conclusión.
+        values = {json.dumps(item.model_dump(), ensure_ascii=False, sort_keys=True): item
+                  for item in [*bundle.original_evidence, *bundle.additional_evidence, *bundle.events]}
+        evidence = [values[key] for key in sorted(values)]
+        known: dict[tuple[str, str], list[Evidence]] = {}
+        for item in evidence:
+            if item.event_id:
+                known.setdefault((item.source, item.event_id), []).append(item)
 
-        Parámetros:
-        * incident: Incidente consolidado procedente de N2 (o dict/Ticket).
-        * bundle: Evidencias ampliadas de Persona 1 (InvestigationBundle).
-        * reconstruction: Reconstrucción del ataque de Persona 2 (AttackReconstruction).
-        * scope: Análisis de alcance e impacto de Persona 3 (ScopeAnalysis).
-        """
-        if scope is None:
-            scope = ScopeAnalyzer().assess(bundle)
+        def check_references(refs: list[EvidenceReference], *, required: bool) -> None:
+            if required and not refs:
+                raise ValueError("Una conclusión o evento requiere referencias a evidencias")
+            for ref in refs:
+                if (ref.source, ref.event_id) not in known:
+                    raise ValueError(f"Evidencia no disponible en el bundle: {ref.source}/{ref.event_id}")
 
-        incident_id = self._extract_incident_id(incident, bundle)
-        alert_ids = self._extract_alert_ids(incident, bundle, reconstruction)
-        title = self._generate_title(incident, reconstruction, scope, incident_id)
+        conclusions = [reconstruction.patient_zero, reconstruction.initial_access,
+                       reconstruction.root_cause, scope.data, scope.business_impact,
+                       *scope.hosts, *scope.users, *scope.services]
+        for conclusion in conclusions:
+            if conclusion.status != "unknown" and (not conclusion.statement or not conclusion.statement.strip()):
+                raise ValueError("Una conclusión conocida requiere statement no vacío")
+            check_references(conclusion.evidence, required=conclusion.status != "unknown")
+        for measure in scope.containment_plan:
+            if not all(value.strip() for value in (measure.action, measure.target, measure.justification)):
+                raise ValueError("Una recomendación requiere acción, objetivo y justificación")
+            check_references(measure.evidence, required=False)
 
-        # 3. Datos provenientes de AttackReconstruction (Persona 2)
-        patient_zero = str(_get_attr_or_key(reconstruction, "patient_zero", "") or "Desconocido / En investigación")
-        initial_access = str(_get_attr_or_key(reconstruction, "initial_access", "") or "Desconocido / En investigación")
-        root_cause = str(_get_attr_or_key(reconstruction, "root_cause", "") or "En investigación")
-        raw_timeline = _get_attr_or_key(reconstruction, "timeline", []) or []
-        timeline = self._build_timeline(raw_timeline)
+        for row in reconstruction.undated_events:
+            check_references([EvidenceReference.model_validate(ref) for ref in row.get("evidence", [])], required=True)
+        timeline = []
+        for item in reconstruction.timeline:
+            check_references(item.evidence, required=True)
+            if item.event_id and item.event_id not in {ref.event_id for ref in item.evidence}:
+                raise ValueError("El event_id de la cronología no está entre sus referencias")
+            instant = parse_utc(item.timestamp)
+            dates = []
+            for ref in item.evidence:
+                if item.event_id and ref.event_id != item.event_id:
+                    continue
+                for observed in known[(ref.source, ref.event_id)]:
+                    timestamp = observed.timestamp or observed.raw.get("timestamp") or observed.raw.get("eventTime")
+                    try:
+                        dates.append(parse_utc(timestamp))
+                    except (ValueError, TypeError, AttributeError):
+                        continue  # Una cita sin fecha no permite inventar la fecha del evento.
+            if instant not in dates:
+                raise ValueError("La fecha de la cronología no coincide con ninguna evidencia citada")
+            normalized = item.model_copy(update={"timestamp": api_time(instant)})
+            timeline.append(normalized)
+        timeline.sort(key=lambda item: (parse_utc(item.timestamp), item.event_id or "", item.description))
+        reconstruction.timeline = timeline
 
-        # 4. Datos provenientes de ScopeAnalysis (Persona 3)
-        scope_details = ScopeDetails(
-            users=list(scope.affected_users),
-            hosts=list(scope.affected_assets),
-            data=scope.affected_data or "Sin datos expuestos identificados",
-            business_impact=scope.business_impact or "Sin impacto empresarial identificado",
+        limitations = [*bundle.limitations, *reconstruction.limitations, *scope.limitations]
+        if not evidence:
+            limitations.append("No se dispone de evidencias; no se pueden confirmar conclusiones.")
+        if not timeline:
+            limitations.append("No se ha aportado una cronología del ataque respaldada por evidencias.")
+        if any(item.status == "hypothesis" for item in conclusions):
+            limitations.append("Las hipótesis requieren verificación; no se presentan como hechos confirmados.")
+        if bundle.related_incidents:
+            limitations.append("Los incidentes relacionados son propuestas de conexión, sin fusión ni causalidad confirmada.")
+        declared_relations = set(incident_data.get("related_incidents") or []) | set(
+            reconstruction.native_details.get("related_incidents") or []
         )
-
-        # 5. Generar plan de contención acorde a la política SOC
-        containment_plan = self._build_containment_plan(scope, reconstruction)
-
-        # 6. Plan de erradicación y recuperación
-        eradication_recovery = self._build_eradication_and_recovery(scope, reconstruction)
-
-        # 7. Notificaciones regulatorias y de gobernanza
-        notifications = self._build_notifications(scope)
-
-        # 8. Brechas de detección y recomendaciones
-        detection_gaps = self._build_detection_gaps(reconstruction, scope)
-
-        # 9. Cálculo de confianza
-        confidence = self._calculate_confidence(scope, reconstruction, bundle)
-
-        # 10. Preguntas abiertas / incógnitas
-        open_questions = self._build_open_questions(scope, reconstruction, bundle)
-
-        # 11. Resumen ejecutivo
-        summary = self._build_executive_summary(
-            incident_id=incident_id,
-            title=title,
-            patient_zero=patient_zero,
-            initial_access=initial_access,
-            scope=scope,
-            root_cause=root_cause,
-        )
-
-        # 12. Incidentes relacionados
-        related_incidents = _get_attr_or_key(incident, "related_incidents", None)
-        if not related_incidents:
-            related_incidents = _get_attr_or_key(reconstruction, "related_incidents", None)
-
+        if any(not isinstance(key, str) or not key.strip() for key in declared_relations):
+            raise ValueError("Los incidentes relacionados deben tener identificadores reales no vacíos")
+        related_details = list(bundle.related_incidents)
+        known_relations = {item["incident_id"] for item in related_details}
+        for key in sorted(declared_relations - known_relations - {incident_id}):
+            related_details.append({"incident_id": key, "status": "unverified",
+                                    "justification": "Relación declarada en la entrada; sin evidencias de conexión aportadas."})
+        if declared_relations:
+            limitations.append("Las relaciones declaradas sin evidencias se conservan como no verificadas, no como hipótesis confirmadas.")
+        for name, conclusion in (("Paciente cero", reconstruction.patient_zero),
+                                 ("Acceso inicial", reconstruction.initial_access),
+                                 ("Causa raíz", reconstruction.root_cause),
+                                 ("Datos afectados", scope.data), ("Impacto de negocio", scope.business_impact)):
+            if conclusion.status == "unknown":
+                limitations.append(f"{name}: no determinado con la evidencia disponible.")
+        affected = {name: sorted({item.statement for item in getattr(scope, name) if item.status == "confirmed"})
+                    for name in ("hosts", "users", "services")}
+        potential = {name: sorted({item.statement for item in getattr(scope, name) if item.status == "hypothesis"})
+                     for name in ("hosts", "users", "services")}
+        questions = [*incident_data.get("open_questions", []), *reconstruction.open_questions, *scope.open_questions]
+        for ticket in bundle.source_tickets:
+            questions.extend(ticket.open_questions)
+        plan = list(scope.containment_plan)
+        recovery = list(scope.eradication_and_recovery)
+        notifications = list(scope.notifications)
+        # Propuestas condicionadas a conclusiones ya citadas, nunca acciones ejecutadas.
+        # No se bloquean IOC genéricos ni se presupone persistencia, exfiltración o brecha legal.
+        for name, action in (("hosts", "Valorar aislamiento coordinado y preservación forense"),
+                             ("users", "Valorar revocación de sesiones y rotación de credenciales")):
+            for conclusion in getattr(scope, name):
+                if conclusion.status != "confirmed":
+                    continue
+                target = conclusion.statement
+                if name == "hosts" and target.upper().startswith(("PLC-", "HMI-")):
+                    action_text = "Coordinar una posible contención OT con Operaciones, sin aislamiento automático"
+                else:
+                    action_text = action
+                if not any(measure.target == target for measure in plan):
+                    plan.append(RecommendedMeasure(
+                        action=action_text, target=target, approver="N2 y responsable del activo o identidad",
+                        justification="Propuesta basada en la conclusión de alcance citada; pendiente de aprobación.",
+                        evidence=conclusion.evidence,
+                        business_impact="Evaluar la interrupción operativa antes de aprobar la medida.",
+                    ))
+                recovery.append(f"Evaluar restauración segura de {target} tras verificar y erradicar los artefactos confirmados."
+                                if name == "hosts" else f"Revisar y recuperar de forma segura el acceso de {target}.")
+        if scope.data.status == "confirmed" and any(
+            word in (scope.data.statement or "").casefold() for word in ("rgpd", "personal", "pci")
+        ):
+            notifications.append("Solicitar al DPO y responsables de cumplimiento la valoración de comunicaciones aplicables.")
         report = IncidentReport(
-            incident_id=incident_id,
-            title=title,
-            alert_ids=alert_ids,
-            patient_zero=patient_zero,
-            initial_access=initial_access,
-            timeline=timeline,
-            scope=scope_details,
-            root_cause=root_cause,
-            containment_plan=containment_plan,
-            related_incidents=related_incidents,
-            eradication_and_recovery=eradication_recovery,
-            notifications=notifications,
-            detection_gaps=detection_gaps,
-            confidence=confidence,
-            open_questions=open_questions,
-            summary=summary,
-            impact_level=scope.impact_level,
-            affected_services=scope.affected_services,
-            affected_network_zones=scope.affected_network_zones,
-            confirmed_findings=scope.confirmed_findings,
-            suspected_findings=scope.suspected_findings,
-            soc_recommendations=self._build_soc_recommendations(scope),
-            investigation_limitations=scope.unknowns,
+            incident_id=incident_id, title=incident_data.get("title") or f"Investigación N3: {incident_id}",
+            alert_ids=sorted(incident_data["alert_ids"]),
+            patient_zero=self._text(reconstruction.patient_zero),
+            initial_access=self._text(reconstruction.initial_access), root_cause=self._text(reconstruction.root_cause),
+            timeline=timeline, scope={**affected, "data": self._text(scope.data),
+                                      "business_impact": self._text(scope.business_impact)},
+            containment_plan=plan,
+            related_incidents=sorted({item["incident_id"] for item in related_details}),
+            eradication_and_recovery=list(dict.fromkeys(recovery)), notifications=list(dict.fromkeys(notifications)),
+            detection_gaps=scope.detection_gaps, open_questions=list(dict.fromkeys(questions)),
+            summary=f"Investigación de {len(incident_data['alert_ids'])} alertas; {len(evidence)} evidencias disponibles. "
+                    "Las conclusiones y sus incertidumbres se detallan con sus referencias.",
+            source_ticket_ids=sorted({ticket.ticket_id for ticket in bundle.source_tickets}),
+            evidence=evidence, reconstruction=reconstruction, scope_analysis=scope,
+            potentially_affected=potential, related_incident_details=related_details,
+            investigation_window=bundle.window, consulted_sources=bundle.consulted_sources,
+            searches=bundle.searches, limitations=list(dict.fromkeys(limitations)),
         )
-
-        # 13. Validar contra el esquema oficial si está disponible
+        report.affected_services = affected["services"]
+        report.confirmed_findings = [item.statement for item in conclusions if item.status == "confirmed"]
+        report.suspected_findings = [item.statement for item in conclusions if item.status == "hypothesis"]
+        report.unverified_findings = list(scope.unverified_scope.get("confirmed_findings", [])) + list(
+            scope.unverified_scope.get("suspected_findings", [])
+        )
+        report.undated_events = reconstruction.undated_events
+        report.investigation_limitations = report.limitations.copy()
+        report.soc_recommendations = (
+            ["Preservar evidencias y revisar las propuestas con el analista antes de aprobar cualquier medida."]
+            if evidence else ["Recuperar evidencias verificables antes de concluir o recomendar contención."]
+        )
+        report.summary += (f" Paciente cero: {report.patient_zero} Acceso inicial: {report.initial_access} "
+                           f"Causa raíz: {report.root_cause} Datos: {report.scope.data} "
+                           f"Impacto de negocio: {report.scope.business_impact}")
         self.validate(report)
-
         return report
-
-    def validate(self, report: IncidentReport) -> None:
-        """Validar el informe contra el esquema JSON oficial si existe."""
-        if self._schema:
-            data = report.model_dump(mode="json", exclude_none=True)
-            try:
-                jsonschema.validate(instance=data, schema=self._schema)
-            except jsonschema.ValidationError as exc:
-                logger.warning("Informe no cumple estrictamente el esquema oficial: %s", exc.message)
-                raise
-
-    def _extract_incident_id(self, incident: Any, bundle: Any) -> str:
-        """Obtener el ID del incidente preservando los identificadores de N2."""
-        for candidate in [
-            _get_attr_or_key(incident, "incident_id"),
-            _get_attr_or_key(incident, "ticket_id"),
-            _get_attr_or_key(incident, "id"),
-            _get_attr_or_key(bundle, "incident_id"),
-        ]:
-            if candidate and isinstance(candidate, str) and candidate.strip():
-                return candidate.strip()
-        return "INC-UNKNOWN"
-
-    def _extract_alert_ids(self, incident: Any, bundle: Any, reconstruction: Any) -> list[str]:
-        """Obtener la lista única y ordenada de alert_ids que forman el incidente."""
-        alert_ids: set[str] = set()
-
-        for source in [incident, bundle, reconstruction]:
-            if source is None:
-                continue
-            raw_ids = _get_attr_or_key(source, "alert_ids", [])
-            if isinstance(raw_ids, list):
-                for item in raw_ids:
-                    if isinstance(item, str) and item.strip():
-                        alert_ids.add(item.strip())
-
-        # Si el incidente es un Ticket individual o consolidado
-        t_id = _get_attr_or_key(incident, "alert_id")
-        if t_id and isinstance(t_id, str) and t_id.strip():
-            alert_ids.add(t_id.strip())
-
-        # También desde tickets en el bundle
-        tickets = _get_attr_or_key(bundle, "tickets", []) or []
-        for t in tickets:
-            t_alert_ids = _get_attr_or_key(t, "alert_ids", [])
-            if isinstance(t_alert_ids, list):
-                for item in t_alert_ids:
-                    if isinstance(item, str) and item.strip():
-                        alert_ids.add(item.strip())
-            single_id = _get_attr_or_key(t, "alert_id")
-            if single_id and isinstance(single_id, str) and single_id.strip():
-                alert_ids.add(single_id.strip())
-
-        if not alert_ids:
-            return ["ALERT-UNKNOWN"]
-
-        return sorted(alert_ids)
-
-    def _generate_title(
-        self,
-        incident: Any,
-        reconstruction: Any,
-        scope: ScopeAnalysis,
-        incident_id: str,
-    ) -> str:
-        """Generar un título representativo para el informe."""
-        existing_title = _get_attr_or_key(incident, "title") or _get_attr_or_key(reconstruction, "title")
-        if existing_title and isinstance(existing_title, str) and existing_title.strip():
-            return existing_title.strip()
-
-        # Construir título según los servicios y la severidad
-        services_str = ", ".join(scope.affected_services[:2]) if scope.affected_services else "Infraestructura Tarvia"
-        impact_cap = (scope.impact_level or "media").capitalize()
-        return f"Incidente {incident_id} [{impact_cap}]: Compromiso en {services_str}"
-
-    def _build_timeline(self, raw_timeline: list[Any]) -> list[TimelineEntry]:
-        """Normalizar la cronología de eventos del ataque."""
-        entries: list[TimelineEntry] = []
-        for item in raw_timeline:
-            if isinstance(item, dict):
-                entries.append(TimelineEntry(
-                    timestamp=str(item.get("timestamp") or "2026-10-01T00:00:00Z"),
-                    event_id=str(item.get("event_id") or ""),
-                    description=str(item.get("description") or "Evento del incidente"),
-                    mitre=str(item.get("mitre") or item.get("technique") or ""),
-                ))
-            elif hasattr(item, "timestamp") and hasattr(item, "description"):
-                entries.append(TimelineEntry(
-                    timestamp=str(getattr(item, "timestamp")),
-                    event_id=str(getattr(item, "event_id", "")),
-                    description=str(getattr(item, "description")),
-                    mitre=str(getattr(item, "mitre", "")),
-                ))
-
-        if not entries:
-            entries.append(TimelineEntry(
-                timestamp="2026-10-01T00:00:00Z",
-                event_id="EVT-001",
-                description="Detección inicial de actividad anómala por las reglas de correlación del SOC",
-                mitre="T1078",
-            ))
-
-        return entries
-
-    def _build_containment_plan(
-        self,
-        scope: ScopeAnalysis,
-        reconstruction: Any,
-    ) -> list[ContainmentAction]:
-        """Elaborar el plan de contención de acuerdo con la política del SOC de Tarvia."""
-        plan: list[ContainmentAction] = []
-
-        # 1. Contención de puestos de trabajo
-        for asset in scope.affected_assets:
-            a_upper = asset.upper()
-            if a_upper.startswith("WS-") or a_upper.startswith("LT-"):
-                plan.append(ContainmentAction(
-                    action="Aislar puesto de trabajo de la red corporativa",
-                    target=asset,
-                    approver="N2",
-                    business_impact="Pérdida temporal de productividad del empleado asignado",
-                ))
-            elif a_upper.startswith("WEB-ECOM") or a_upper.startswith("PAY-GW"):
-                plan.append(ContainmentAction(
-                    action="Aislar o desviar tráfico del frontal web/pasarela en DMZ",
-                    target=asset,
-                    approver="N2 + responsable de negocio (Directora de E-commerce / Director Financiero)",
-                    business_impact="Posible degradación de ventas en tienda online; coordinar con balanceador",
-                ))
-            elif a_upper.startswith("POS-T"):
-                plan.append(ContainmentAction(
-                    action="Aislar TPV de la tienda física afectada",
-                    target=asset,
-                    approver="N2 + negocio (Directora de Operaciones)",
-                    business_impact="Afectación temporal a cobros físicos en la tienda",
-                ))
-            elif a_upper.startswith("PLC-") or a_upper.startswith("HMI-") or "OT" in a_upper:
-                plan.append(ContainmentAction(
-                    action="Escalar a Responsable de Operaciones para contención de red OT",
-                    target=asset,
-                    approver="Responsable de Operaciones (nunca aislar automáticamente)",
-                    business_impact="Riesgo crítico de detención de clasificación de pedidos en Martorell",
-                ))
-            else:
-                plan.append(ContainmentAction(
-                    action="Aislar servidor y capturar imagen forense de memoria",
-                    target=asset,
-                    approver="N2 + responsable del servicio",
-                    business_impact="Impacto operativo en servicios dependientes en CPD",
-                ))
-
-        # 2. Contención de identidades comprometidas
-        for user in scope.affected_users:
-            plan.append(ContainmentAction(
-                action="Revocar todas las sesiones activas y forzar cambio de contraseña",
-                target=user,
-                approver="N2",
-                business_impact="Desconexión inmediata del usuario para evitar persistencia o movimiento lateral",
-            ))
-
-        # 3. Bloqueo de IOCs externos
-        plan.append(ContainmentAction(
-            action="Bloquear direcciones IP, dominios y hashes maliciosos en firewall, proxy y EDR",
-            target="IOCs identificados en el incidente",
-            approver="SOC N1 / N2",
-            business_impact="Sin impacto en la operativa legítima; interrupción del canal C2 del atacante",
-        ))
-
-        return plan
-
-    def _build_eradication_and_recovery(
-        self,
-        scope: ScopeAnalysis,
-        reconstruction: Any,
-    ) -> list[str]:
-        """Definir los pasos de erradicación y recuperación."""
-        steps = [
-            "Eliminar cualquier tarea programada, servicio persistente o cuenta auxiliar creada por el atacante.",
-            "Reinstalar o reimplementar desde imágenes limpias los sistemas con ejecución de código malicioso confirmada.",
-            "Rotar todas las credenciales de los usuarios y cuentas de servicio implicadas en el incidente.",
-        ]
-
-        if any("SQL-CRM" in a or "CRM" in a for a in scope.affected_assets):
-            steps.append(
-                "Verificar la integridad de las bases de datos de CRM frente a copias de seguridad de BACKUP01 y comprobar que no existan disparadores o puertas traseras."
-            )
-
-        steps.append(
-            "Mantener un periodo de monitorización intensiva de 14 días con telemetría de EDR y reglas de detección específicas activadas."
-        )
-
-        return steps
-
-    def _build_notifications(self, scope: ScopeAnalysis) -> list[str]:
-        """Determinar las notificaciones obligatorias según la normativa y la política de Tarvia."""
-        notifications: list[str] = []
-
-        # RGPD / AEPD (72 horas)
-        if "RGPD" in scope.affected_data or "Datos personales" in scope.affected_data:
-            notifications.append(
-                "DPO y Asesoría Jurídica de Tarvia: Notificación formal de brecha de datos a la Agencia Española de Protección de Datos (AEPD) y a la CNPD (Portugal) en un plazo máximo de 72 horas (Art. 33 RGPD)."
-            )
-
-        # PCI DSS / Entidades adquirentes
-        if "PCI DSS" in scope.affected_data or any("Cobros" in s for s in scope.affected_services):
-            notifications.append(
-                "Director Financiero y Entidad Adquirente de Pagos: Notificación obligatoria según el estándar PCI DSS ante posible incidente en pasarela de pagos."
-            )
-
-        # Gobernanza interna
-        if scope.impact_level in ["critical", "high"]:
-            notifications.append(
-                "CISO (Alba Rovira) y Comité de Dirección: Comunicación ejecutiva inmediata del estado del incidente y las medidas de contención aplicadas."
-            )
-
-        # Responsables de servicios de negocio
-        for svc in scope.affected_services:
-            notifications.append(
-                f"Responsable del servicio '{svc}': Comunicación del impacto técnico y coordinación de la recuperación operativa."
-            )
-
-        if not notifications:
-            notifications.append("Responsable del SOC: Registro interno y seguimiento del incidente.")
-
-        return notifications
-
-    def _build_detection_gaps(self, reconstruction: Any, scope: ScopeAnalysis) -> list[str]:
-        """Identificar qué no se detectó a tiempo y qué reglas deben crearse o afinarse."""
-        gaps: list[str] = []
-
-        gaps.append(
-            "Correlación entre accesos remotos (VPN/IdP) y ejecuciones de herramientas administrativas anómalas (Living-off-the-Land)."
-        )
-        gaps.append(
-            "Reglas de detección específicas para intentos de acceso a credenciales en memoria (LSASS/SAM) en servidores críticos."
-        )
-
-        if "Exfiltración" in scope.affected_data or "Acceso detectado" in scope.affected_data:
-            gaps.append(
-                "Monitorización de umbrales de transferencia de datos salientes (DLP) en bases de datos y servidores DMZ."
-            )
-
-        return gaps
-
-    def _calculate_confidence(
-        self,
-        scope: ScopeAnalysis,
-        reconstruction: Any,
-        bundle: Any,
-    ) -> float:
-        """Calcular el nivel de confianza del informe entre 0.0 y 1.0."""
-        score = 0.50
-
-        # Si hay hallazgos confirmados, sube la confianza
-        if scope.confirmed_findings:
-            score += 0.30
-        elif scope.suspected_findings:
-            score += 0.15
-
-        # Si hay cronología reconstruida
-        timeline = _get_attr_or_key(reconstruction, "timeline", [])
-        if timeline:
-            score += 0.10
-
-        # Penalizar si hay muchas incógnitas
-        if len(scope.unknowns) >= 3:
-            score -= 0.15
-
-        return max(0.10, min(1.0, round(score, 2)))
-
-    def _build_open_questions(
-        self,
-        scope: ScopeAnalysis,
-        reconstruction: Any,
-        bundle: Any,
-    ) -> list[str]:
-        """Recopilar todas las preguntas pendientes de los distintos módulos."""
-        questions: list[str] = []
-
-        # Desde ScopeAnalysis
-        for u in scope.unknowns:
-            if u not in questions:
-                questions.append(u)
-
-        # Desde reconstruction
-        recon_questions = _get_attr_or_key(reconstruction, "open_questions", []) or []
-        for q in recon_questions:
-            if isinstance(q, str) and q.strip() and q.strip() not in questions:
-                questions.append(q.strip())
-
-        # Desde bundle
-        bundle_questions = _get_attr_or_key(bundle, "open_questions", []) or []
-        for q in bundle_questions:
-            if isinstance(q, str) and q.strip() and q.strip() not in questions:
-                questions.append(q.strip())
-
-        return questions
-
-    def _build_executive_summary(
-        self,
-        incident_id: str,
-        title: str,
-        patient_zero: str,
-        initial_access: str,
-        scope: ScopeAnalysis,
-        root_cause: str,
-    ) -> str:
-        """Construir un resumen ejecutivo claro y conciso del incidente."""
-        assets_str = ", ".join(scope.affected_assets[:4]) if scope.affected_assets else "Ninguno confirmado"
-        users_str = ", ".join(scope.affected_users[:3]) if scope.affected_users else "Ninguno confirmado"
-        services_str = ", ".join(scope.affected_services) if scope.affected_services else "Infraestructura interna"
-
-        return (
-            f"El incidente {incident_id} ({title}) ha sido evaluado con nivel de impacto {scope.impact_level.upper()}. "
-            f"El punto de acceso inicial se atribuye a '{initial_access}' con paciente cero en '{patient_zero}'. "
-            f"La investigación determina una afectación sobre los servicios de negocio '{services_str}', "
-            f"involucrando los equipos [{assets_str}] y las identidades [{users_str}]. "
-            f"Respecto a los datos: {scope.affected_data}. "
-            f"Causa raíz identificada: {root_cause}. "
-            f"Impacto para Tarvia Group: {scope.business_impact}."
-        )
-
-    def _build_soc_recommendations(self, scope: ScopeAnalysis) -> list[str]:
-        """Generar recomendaciones técnicas y tácticas para el SOC de Tarvia."""
-        recs = [
-            "Ejecutar el plan de contención de forma inmediata en coordinación con los responsables de negocio indicados.",
-            "Revisar el registro de cambios aprobados para descartar solapamiento con tareas de mantenimiento legítimas.",
-            "Bloquear los indicadores de compromiso (IOC) identificados en toda la infraestructura perimetral y de endpoint.",
-            "Preservar las evidencias forenses (volcados de memoria, logs de firewall y EDR) para posibles acciones legales o auditoría.",
-        ]
-        if "RGPD" in scope.affected_data:
-            recs.append("Activar el protocolo de comunicación con el DPO de Tarvia para la gestión del plazo de 72 horas ante la AEPD.")
-        return recs
