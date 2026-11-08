@@ -1,0 +1,127 @@
+{
+  "ticket_id": "TRIAGE-b715a6e2-90f7-442d-bc05-0c4c7b083306",
+  "alert_ids": [
+    "ALR-20261005-000450"
+  ],
+  "title": "Bucket público vía Terraform en runner CI autorizado (svc_ecom_deploy)",
+  "verdict": "needs_more_info",
+  "confidence": 0.44,
+  "severity": "high",
+  "summary": "svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo. Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false). Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000127",
+      "finding": "svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000062",
+      "finding": "svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000121",
+      "finding": "svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000007",
+      "finding": "svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000008",
+      "finding": "svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000185",
+      "finding": "Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000181",
+      "finding": "Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000182",
+      "finding": "Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000183",
+      "finding": "Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000184",
+      "finding": "Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-35ef4cbca47a1b7f literal en cloudtrail: q='CT-0000185'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: Al 2026-10-05T09:05Z se registran 5 PutBucketPolicy idénticos (CT-0000181 a CT-0000185) con policy 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5, que generan la alerta UC-CLD-003 de bucket de acceso público (ALR-20261005-000086, -000184, -000271, -000364 y la alerta principal ALR-20261005-000450). El evento referenciado por la alerta (CT-0000185) se confirma exacto en QRY-35ef4cbca47a1b7f (count 1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-0e9a6e34173ee1cb literal en cloudtrail: q='akiatarvia7xq2deply'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_access_key_baseline_usage_and_identity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: svc_ecom_deploy, desde CI-RUNNER01 (172.16.10.21, zona AWS-PROD), ejecuta actividad normal de S3 contra tarvia-media-public: 25 PutObject, 27 GetObject y 15 ListObjects con errorCode vacío entre 2026-10-04T22:33Z y 2026-10-06T09:01Z (QRY-0e9a6e34173ee1cb, count 72, truncated=false). El acceso desde este runner es el origen habitual de la clave según la ficha del activo."
+    },
+    {
+      "source": "cicd_builds",
+      "finding": "Consulta QRY-2e04fb95eacfda82 literal en cicd_builds: q='ci-runner01'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=31; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_known_terraform_pipeline_or_approved_change sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-618bcb765c5ad3dd literal en cloudtrail: q='tarvia-media-public'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_s3_bucket_acl_or_policy_public_exposure sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "verify_bucket_policy_readonly",
+      "target": "tarvia-media-public",
+      "requires_approval": false,
+      "justification": "Confirmar si la política pública aplicada (s3:GetObject para Principal *) es realmente lectura de imágenes de producto y no una exposición más amplia; verificar la ACL/policy real del bucket y restringir Principal si procede. Recomendación manual sin aprobación formal de contención; no ejecutar como endpoint de la API. Revisar con prioridad por severidad high."
+    },
+    {
+      "action": "verify_terraform_approval_for_bucket_change",
+      "target": "ci-runner01, tarvia-media-public",
+      "requires_approval": false,
+      "justification": "Buscar el cambio aprobado o pipeline Terraform conocido que autorice la exposición de lectura del bucket; sin change_id verificable, la autorización es solo potencial. Recomendación manual sin aprobación formal de contención; no ejecutar como endpoint de la API. Revisar con prioridad por severidad high."
+    },
+    {
+      "action": "verify_cloud_change",
+      "target": "tarvia-media-public",
+      "requires_approval": false,
+      "justification": "Verificar con el responsable cloud la aprobación, el alcance público y la clasificación del bucket antes de proponer desactivar claves o aislar el runner; el cambio observado no demuestra compromiso de esas entidades. Recomendación manual sin aprobación formal de contención; no ejecutar como endpoint de la API. Revisar con prioridad por severidad high."
+    }
+  ],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "Escalado preventivo por riesgo de severidad high sin resolver (veredicto needs_more_info). Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+  },
+  "severity_rationale": "Severidad inicial: medium. Sin criticidad conocida de entidades afectadas: no se puede aplicar la matriz completa; se conserva la severidad inicial como base provisional. Ajuste +1 no acumulativo según analysis.signals por: ejecución o acceso confirmado. Severidad final: high.",
+  "affected": {
+    "cloud": [
+      {
+        "bucket": "tarvia-media-public",
+        "identity": "svc_ecom_deploy"
+      }
+    ],
+    "business_services": [
+      "Integración continua"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1537"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Qué política de bucket existe realmente en tarvia-media-public y está restringida a imágenes de producto, o la exposición de Principal * es más amplia de lo declarado?",
+    "¿Existe un cambio aprobado o pipeline Terraform conocido que autorice el PutBucketPolicy; de no existir, la exposición no está documentada como autorización válida.",
+    "¿Se ha producido alguna lectura exitosa (GetObject con Principal externo) del bucket tras la política pública, o solo hay actividad interna del runner?"
+  ],
+  "triage_seconds": 26.722655299992766
+}

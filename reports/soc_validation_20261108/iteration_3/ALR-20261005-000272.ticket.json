@@ -1,0 +1,237 @@
+{
+  "ticket_id": "TRIAGE-d89a5d3c-c42e-4fd0-9757-077bf1f0d1ff",
+  "alert_ids": [
+    "ALR-20261005-000272"
+  ],
+  "title": "Intentos de autenticación bloqueados",
+  "verdict": "true_positive",
+  "confidence": 0.8,
+  "severity": "high",
+  "summary": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes. El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado. Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003615",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003616",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003617",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003618",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003619",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003620",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003621",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003622",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003623",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003624",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003625",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003626",
+      "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003615",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003616",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003617",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003618",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003619",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003620",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003621",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003622",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003623",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003624",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003625",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003626",
+      "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-43488d79e4913609 literal en idp_signins: q='SIGN-0003615'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-64495f802566eb51 literal en idp_signins: q='SIGN-0003616'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-149f22e4f2f024e5 literal en idp_signins: q='SIGN-0003617'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-c36486d2df339640 literal en idp_signins: q='SIGN-0003618'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-883a0356ae37747c literal en idp_signins: q='SIGN-0003619'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-70c45ba358bc5e55 literal en idp_signins: q='SIGN-0003620'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-a5e17691c4fdf8f1 literal en idp_signins: q='198.18.11.130'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=12; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_authentication_history_and_mfa_result sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-1622ce2f7d222865 literal en idp_audit: q='alvaro.pons'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-7fd382e40fcc76e0 literal en idp_audit: q='enric.gil'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f25c9449a169725c literal en idp_audit: q='joan.delgado'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-ac2b15bd714e9d00 literal en idp_audit: q='judith.cortes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-000688bff41d5107 literal en idp_audit: q='celia.garcia'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f4788d336ba80c28 literal en idp_audit: q='ferran.reyes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f852d29beaf2ad6a literal en idp_audit: q='laia.pujol'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-d389cb4ac8671ac2 literal en idp_audit: q='lorena.mora'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-7b98e2fc939afa60 literal en idp_audit: q='lorena.vega'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "disable_user",
+      "target": "ferran.reyes@tarvia.example",
+      "requires_approval": true,
+      "justification": "Ante la creación de regla de buzón sospechosa asociada a la cuenta y su inclusión en la lista de objetivos del spraying, deshabilitar la cuenta evita uso adicional mientras se verifica qué identidad ejecutó la regla. Requiere aprobación N2. Si es una cuenta de servicio, revisar el impacto en el proceso de negocio. Revisar con prioridad por severidad high."
+    },
+    {
+      "action": "block_ioc",
+      "target": "198.18.11.130",
+      "requires_approval": false,
+      "justification": "IP de origen del password spraying (IR, AS64695, BAV2ROPC) bloqueada por smart_lockout en los 12 intentos; bloquearla impide nuevos ataques contra la identidad. Permitida a N1 para un IOC concreto en proxy, correo o EDR. Revisar con prioridad por severidad high."
+    }
+  ],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "Escalado obligatorio a N2 según la política SOC. True positive de severidad high. Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+  },
+  "severity_rationale": "Severidad inicial: high. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: critical. Ajuste -1 según analysis.signals por bloqueo confirmado antes de producir efecto y ausencia de actividad posterior relevante. Severidad final: high.",
+  "affected": {
+    "ips": [
+      "198.18.11.130"
+    ],
+    "users": [
+      "(12 cuentas)"
+    ],
+    "business_services": [
+      "Identidad y directorio activo"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1110.003"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿La cuenta ferran.reyes fue comprometida efectivamente (sesión activa o cookie robada) o la regla se creó por otro vector; qué sesiones activas y consentimientos OAuth existen para la cuenta?"
+  ],
+  "triage_seconds": 45.22653379999974
+}

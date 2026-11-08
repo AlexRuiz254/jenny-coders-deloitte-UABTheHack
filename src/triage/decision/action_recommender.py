@@ -7,7 +7,9 @@ from urllib.parse import urlsplit
 from src.triage.models import (
     Analysis,
     ContextSnapshot,
+    Evidence,
     ProposedAction,
+    RawAlert,
     SeverityDecision,
     TicketAction,
     VerdictDecision,
@@ -36,6 +38,8 @@ class ActionRecommender:
         *,
         verdict: VerdictDecision,
         severity: SeverityDecision,
+        alert: RawAlert | None = None,
+        evidence: list[Evidence] | None = None,
     ) -> list[TicketAction]:
         """Filtrar por veredicto validado, aplicar permisos y eliminar duplicados.
 
@@ -44,6 +48,14 @@ class ActionRecommender:
         """
         recommendations: list[TicketAction] = []
         seen: set[tuple[str, ...]] = set()
+        cloud_review: ProposedAction | None = None
+        if (alert and alert.get("rule_id") == "UC-CLD-003"
+                and not any(getattr(analysis.signals, name) for name in (
+                    "credentials_compromised", "persistence", "personal_data_exposure", "malicious_execution"))):
+            cloud = (alert.get("entities") or {}).get("cloud") or {}
+            if isinstance(cloud, dict) and cloud.get("bucket"):
+                cloud_review = ProposedAction(action="verify_cloud_change", target=cloud["bucket"],
+                    justification="Verificar con el responsable cloud la aprobación, el alcance público y la clasificación del bucket antes de proponer desactivar claves o aislar el runner; el cambio observado no demuestra compromiso de esas entidades.")
         for proposed in analysis.proposed_actions:
             action = proposed.model_copy(update={
                 "action": proposed.action.strip().casefold(),
@@ -52,12 +64,45 @@ class ActionRecommender:
             })
             if not action.action:
                 continue
+            if cloud_review and action.action in {"disable_access_key", "isolate_host", "disable_user"}:
+                action = cloud_review
             containment = action.action in CONTAINMENT_ACTIONS
             if not containment and (action.action.startswith(("close", "cerrar")) or action.action == "mark_as_benign"):
                 if verdict.verdict == "needs_more_info" or severity.severity in {"high", "critical"}:
                     continue
-                reason = action.justification.casefold()
-                if ("autorizad" in reason or "benign" in reason) and verdict.verdict != "benign_true_positive":
+                if any(getattr(analysis.signals, name) for name in (
+                    "malicious_execution", "credentials_compromised", "persistence",
+                    "personal_data_exposure", "financial_fraud", "attack_chain")):
+                    continue
+                if action.action in {"close_as_authorized", "close_as_benign", "mark_as_benign"} and verdict.verdict != "benign_true_positive":
+                    continue
+                if verdict.verdict == "false_positive":
+                    action.justification = "Cierre propuesto por detección incorrecta conforme al veredicto y los hallazgos validados."
+                elif verdict.verdict == "benign_true_positive":
+                    action.justification = "Cierre propuesto por actividad cubierta por la autorización contrastada en los hallazgos."
+                elif analysis.signals.blocked_before_effect:
+                    action.justification = "Intento bloqueado antes de producir efecto, con continuación investigada dentro del alcance documentado; valorar cierre según el runbook."
+                elif alert and alert.get("source_product") == "WAF":
+                    # RB-05 permite cerrar un escaneo bloqueado sin afirmar que se
+                    # haya descartado universalmente compromiso en los servidores.
+                    from src.triage.investigation.investigation_agent import InvestigationAgent
+                    refs = {ref for finding in analysis.findings for ref in finding.evidence_ids}
+                    original = [ev for ev in evidence or [] if ev.event_id in alert.get("related_events", [])
+                                and ev.event_id in refs and ev.source == "waf"]
+                    window = InvestigationAgent._compute_alert_window(alert)
+                    scoped_scan = bool(original) and all(
+                        InvestigationAgent._get_event_outcome(ev) == "blocked"
+                        and ev.raw.get("rule_id") and ev.raw.get("src_ip")
+                        and InvestigationAgent._query_covers("waf", ev.raw["src_ip"], window["window_start"],
+                                                              window["window_end"], evidence or []) for ev in original)
+                    successful = any(ev.source == "waf" and ev.raw.get("src_ip") in {e.raw.get("src_ip") for e in original}
+                                     and InvestigationAgent._get_event_outcome(ev) == "success" for ev in evidence or [])
+                    decisive = any(re.search(r"malicia|legitimidad|autorizaci[oó]n.*(?:pendiente|confirmar)|contradicci[oó]n", q, re.I)
+                                   for q in analysis.open_questions)
+                    if not scoped_scan or successful or decisive:
+                        continue
+                    action.justification = "RB-05 permite valorar el cierre del intento web bloqueado documentado y de la consulta WAF del origen. El cierre se limita a este intento; no acredita ausencia global de compromiso en el backend."
+                else:
                     continue
             if containment:
                 if verdict.verdict in {"false_positive", "benign_true_positive"}:
@@ -95,6 +140,8 @@ class ActionRecommender:
                     f"Revisar con prioridad por severidad {severity.severity}."
                 )
             recommendations.append(recommendation)
+        if cloud_review and verdict.verdict == "needs_more_info" and not recommendations:
+            recommendations.append(self._check_action_policy(cloud_review, context))
         return recommendations
 
     def _check_action_policy(

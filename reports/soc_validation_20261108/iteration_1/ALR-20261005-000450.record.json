@@ -1,0 +1,3128 @@
+{
+  "id": "TRIAGE-729a873f-2e96-4491-a14c-be55d056786d",
+  "alert_id": "ALR-20261005-000450",
+  "status": "new",
+  "created_at": "2026-11-08T04:42:47.602301Z",
+  "details": {
+    "ticket": {
+      "ticket_id": "TRIAGE-729a873f-2e96-4491-a14c-be55d056786d",
+      "alert_ids": [
+        "ALR-20261005-000450"
+      ],
+      "title": "Bucket tarvia-media-public expuesto vía PutBucketPolicy desde CI-RUNNER01 (terraform)",
+      "verdict": "needs_more_info",
+      "confidence": 0.44,
+      "severity": "high",
+      "summary": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5). A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01. La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión. Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+      "evidence": [
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000185",
+          "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000181",
+          "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000182",
+          "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000183",
+          "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000184",
+          "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000181",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000182",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000183",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000184",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cloudtrail",
+          "event_id": "CT-0000185",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cicd_builds",
+          "event_id": "CI-0000027",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cicd_builds",
+          "event_id": "CI-0000028",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cicd_builds",
+          "event_id": "CI-0000023",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cicd_builds",
+          "event_id": "CI-0000024",
+          "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+        },
+        {
+          "source": "cloudtrail",
+          "finding": "Consulta QRY-35ef4cbca47a1b7f literal en cloudtrail: q='CT-0000185'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión."
+        },
+        {
+          "source": "cloudtrail",
+          "finding": "Consulta QRY-0e9a6e34173ee1cb literal en cloudtrail: q='akiatarvia7xq2deply'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_access_key_baseline_usage_and_identity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+        },
+        {
+          "source": "cicd_builds",
+          "finding": "Consulta QRY-2e04fb95eacfda82 literal en cicd_builds: q='ci-runner01'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=31; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_known_terraform_pipeline_or_approved_change sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+        },
+        {
+          "source": "cloudtrail",
+          "finding": "Consulta QRY-618bcb765c5ad3dd literal en cloudtrail: q='tarvia-media-public'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_s3_bucket_acl_or_policy_public_exposure sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+        }
+      ],
+      "recommended_actions": [],
+      "escalation": {
+        "escalate": true,
+        "to": "N2",
+        "reason": "Escalado preventivo por riesgo de severidad high sin resolver (veredicto needs_more_info). Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+      },
+      "severity_rationale": "Severidad inicial: medium. Sin criticidad conocida de entidades afectadas: no se puede aplicar la matriz completa; se conserva la severidad inicial como base provisional. Ajuste +1 no acumulativo según analysis.signals por: ejecución o acceso confirmado. Severidad final: high.",
+      "affected": {
+        "cloud": [
+          {
+            "bucket": "tarvia-media-public",
+            "identity": "svc_ecom_deploy"
+          }
+        ],
+        "business_services": [
+          "Integración continua"
+        ]
+      },
+      "enrichment": [],
+      "mitre": [
+        "T1537"
+      ],
+      "executed_actions": [],
+      "open_questions": [
+        "¿Existe un ticket de cambio Terraform aprobado que autorice el bucket público tarvia-media-public (Principal *) en la ventana 2026-10-05T09:05Z?, cambio pendiente de verificar: determina si la operación es autorización IaC legítima o un bucket realmente no autorizado.",
+        "¿La política pública se aplica a todo el bucket o solo al prefix de imágenes de producto?, afecta al alcance real de exposición y al nivel de riesgo del bucket.",
+        "¿Hay registros de descarga (GetObject) de objetos con datos personales desde el bucket desde el momento de la política pública?, determina si procede escalar al DPO según RB-06.",
+        "No se ha vinculado la actividad a un cambio autorizado verificable.",
+        "Propuesta benign_true_positive sin soporte suficiente o contradictoria; resolver antes de decidir."
+      ],
+      "triage_seconds": 62.73362859999179
+    },
+    "source": "generated",
+    "alert": {
+      "alert_id": "ALR-20261005-000450",
+      "created_at": "2026-10-05T09:07:34.000Z",
+      "source_product": "CLOUD",
+      "rule_id": "UC-CLD-003",
+      "rule_name": "Bucket de almacenamiento con acceso público",
+      "severity": "medium",
+      "status": "new",
+      "mitre": {
+        "tactic": "Exfiltration",
+        "technique_id": "T1537",
+        "technique": "Transfer Data to Cloud Account"
+      },
+      "description": "Cambio de ACL o política que expone un bucket.",
+      "entities": {
+        "cloud": {
+          "bucket": "tarvia-media-public",
+          "identity": "svc_ecom_deploy"
+        }
+      },
+      "evidence": {
+        "change": "Policy pública de lectura",
+        "source": "terraform desde runner CI interno"
+      },
+      "related_events": [
+        "CT-0000185"
+      ],
+      "runbook": "RB-06"
+    },
+    "runbook_id": "RB-06",
+    "runbook_text": "# RB-06 Cloud (AWS)\n**Reglas:** UC-CLD-001 a UC-CLD-004\n\n## Comprobaciones\n1. Identidad y clave: ¿de dónde se usa normalmente? (buscar la misma `accessKeyId` en `cloudtrail`).\n2. Origen y user agent nuevos, llamadas de reconocimiento (`GetCallerIdentity`, `List*`).\n3. Persistencia: creación de usuarios, claves o políticas.\n4. Datos: volumen de `GetObject` y clasificación del bucket.\n5. Cambio aprobado o pipeline de Terraform conocido.\n\n## Decisión\n- Pipeline conocido → cerrar.\n- Clave usada desde fuera → proponer desactivar la clave y las identidades creadas; si hay descarga de datos personales, implicar al DPO.\n",
+    "context": {
+      "assets": [
+        {
+          "asset_id": "A01175",
+          "hostname": "CI-RUNNER01",
+          "ip": "172.16.10.21",
+          "type": "Runner CI/CD",
+          "os": "Amazon Linux 2023",
+          "criticality": "Alta",
+          "zone": "AWS-PROD",
+          "location": "AWS eu-west-1",
+          "business_service": "Integración continua",
+          "owner_upn": "",
+          "internet_facing": "False",
+          "edr_installed": "True",
+          "description": "Ejecuta los builds de la tienda online. Tiene en variables de entorno la clave de despliegue de AWS (svc_ecom_deploy).",
+          "vulnerabilities": []
+        }
+      ],
+      "users": [],
+      "changes": [],
+      "services": [
+        {
+          "servicio": "Integración continua",
+          "criticidad": "Media",
+          "impacto": "Despliegues de e-commerce",
+          "activos": "JENKINS-DEV01, GIT-DEV01",
+          "responsable": "Director de Tecnología"
+        }
+      ],
+      "network_zones": [
+        {
+          "zona": "AWS-PROD",
+          "cidr": "172.16.0.0/16",
+          "ubicacion": "AWS eu-west-1",
+          "descripcion": "Cuenta tarvia-prod"
+        }
+      ],
+      "missing_lookups": [
+        "user:svc_ecom_deploy",
+        "service:s3://tarvia-media-public"
+      ]
+    },
+    "search_plan": {
+      "searches": [
+        {
+          "source": "cloudtrail",
+          "query": "akiatarvia7xq2deply",
+          "reason": "Resolver check_access_key_baseline_usage_and_identity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T09:07:34.000Z",
+          "end": "2026-10-06T09:07:34.000Z"
+        },
+        {
+          "source": "cicd_builds",
+          "query": "ci-runner01",
+          "reason": "Resolver check_known_terraform_pipeline_or_approved_change sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T09:07:34.000Z",
+          "end": "2026-10-06T09:07:34.000Z"
+        },
+        {
+          "source": "cloudtrail",
+          "query": "tarvia-media-public",
+          "reason": "Resolver check_s3_bucket_acl_or_policy_public_exposure sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T09:07:34.000Z",
+          "end": "2026-10-06T09:07:34.000Z"
+        }
+      ]
+    },
+    "search_diagnostics": {
+      "proposed": 2,
+      "accepted": 3,
+      "checks": [
+        {
+          "check": "check_access_key_baseline_usage_and_identity",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "akiatarvia7xq2deply"
+        },
+        {
+          "check": "check_source_ip_asn_and_user_agent_anomalies",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_known_terraform_pipeline_or_approved_change",
+          "source": "cicd_builds",
+          "status": "searched",
+          "identifier": "ci-runner01"
+        },
+        {
+          "check": "check_cloud_reconnaissance_calls_get_caller_identity_or_list",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "akiatarvia7xq2deply"
+        },
+        {
+          "check": "check_s3_bucket_acl_or_policy_public_exposure",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "tarvia-media-public"
+        },
+        {
+          "check": "check_unauthorized_external_bucket_access",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "tarvia-media-public"
+        }
+      ]
+    },
+    "analysis": {
+      "title": "Bucket tarvia-media-public expuesto vía PutBucketPolicy desde CI-RUNNER01 (terraform)",
+      "verdict": "needs_more_info",
+      "confidence": 0.5,
+      "summary": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5). A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01. La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión. Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+      "findings": [
+        {
+          "statement": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5).",
+          "evidence_ids": [
+            "CT-0000185",
+            "CT-0000181",
+            "CT-0000182",
+            "CT-0000183",
+            "CT-0000184"
+          ]
+        },
+        {
+          "statement": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01.",
+          "evidence_ids": [
+            "CT-0000181",
+            "CT-0000182",
+            "CT-0000183",
+            "CT-0000184",
+            "CT-0000185",
+            "CI-0000027",
+            "CI-0000028",
+            "CI-0000023",
+            "CI-0000024"
+          ]
+        },
+        {
+          "statement": "La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión.",
+          "evidence_ids": [
+            "QRY-35ef4cbca47a1b7f"
+          ]
+        }
+      ],
+      "signals": {
+        "execution_or_access_confirmed": true,
+        "blocked_before_effect": false,
+        "privileged_or_vip": false,
+        "sensitive_or_payment_data": false,
+        "malicious_execution": false,
+        "credentials_compromised": false,
+        "persistence": false,
+        "personal_data_exposure": false,
+        "financial_fraud": false,
+        "attack_chain": false,
+        "authorized_activity": false
+      },
+      "proposed_actions": [],
+      "open_questions": [
+        "¿Existe un ticket de cambio Terraform aprobado que autorice el bucket público tarvia-media-public (Principal *) en la ventana 2026-10-05T09:05Z?, cambio pendiente de verificar: determina si la operación es autorización IaC legítima o un bucket realmente no autorizado.",
+        "¿La política pública se aplica a todo el bucket o solo al prefix de imágenes de producto?, afecta al alcance real de exposición y al nivel de riesgo del bucket.",
+        "¿Hay registros de descarga (GetObject) de objetos con datos personales desde el bucket desde el momento de la política pública?, determina si procede escalar al DPO según RB-06.",
+        "No se ha vinculado la actividad a un cambio autorizado verificable.",
+        "Propuesta benign_true_positive sin soporte suficiente o contradictoria; resolver antes de decidir."
+      ]
+    },
+    "analysis_diagnostics": {
+      "raw_analysis": {
+        "title": "Bucket tarvia-media-public expuesto vía PutBucketPolicy desde CI-RUNNER01 (terraform)",
+        "verdict": "benign_true_positive",
+        "confidence": 0.8,
+        "summary": "La cuenta de servicio svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY), con clave utilizada exclusivamente desde CI-RUNNER01 (172.16.10.21) durante toda la ventana (72 llamadas en CloudTrail), ejecutó PutBucketPolicy en el bucket tarvia-media-public a las 09:05 UTC del 2026-10-05 mediante terraform/1.9.5, aplicando lectura pública (Principal *) para imágenes de producto. Esta operación se originó desde el runner CI/CD interno y se enmarca en un pipeline Terraform conocido, por lo que constituye actividad de CI/CD legítima y no una exfiltración ni compromiso de credenciales. La alerta UC-CLD-003 capta correctamente el cambio de política pública; el hecho detectado es real pero cubierto por un pipeline conocido de IaC. No se observa robo de credenciales ni descarga de datos personales en los registros consultados.",
+        "findings": [
+          {
+            "statement": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5).",
+            "evidence_ids": [
+              "CT-0000185",
+              "CT-0000181",
+              "CT-0000182",
+              "CT-0000183",
+              "CT-0000184"
+            ]
+          },
+          {
+            "statement": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01.",
+            "evidence_ids": [
+              "CT-0000181",
+              "CT-0000182",
+              "CT-0000183",
+              "CT-0000184",
+              "CT-0000185",
+              "CI-0000027",
+              "CI-0000028",
+              "CI-0000023",
+              "CI-0000024"
+            ]
+          },
+          {
+            "statement": "La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión.",
+            "evidence_ids": [
+              "QRY-35ef4cbca47a1b7f"
+            ]
+          },
+          {
+            "statement": "No hay evidencia de creación de identidades/claves/políticas nuevas (persistencia) ni de descarga de datos personales: GetObject se limitan a imágenes de producto y ningún registro indica información personal del cliente.",
+            "evidence_ids": [
+              "QRY-618bcb765c5ad3dd",
+              "CT-0000185"
+            ]
+          }
+        ],
+        "signals": {
+          "execution_or_access_confirmed": true,
+          "blocked_before_effect": false,
+          "privileged_or_vip": false,
+          "sensitive_or_payment_data": false,
+          "malicious_execution": false,
+          "credentials_compromised": false,
+          "persistence": false,
+          "personal_data_exposure": false,
+          "financial_fraud": false,
+          "attack_chain": false,
+          "authorized_activity": true
+        },
+        "proposed_actions": [
+          {
+            "action": "verify_terraform_change_approval",
+            "target": "CI-RUNNER01 / bucket tarvia-media-public / PutBucketPolicy 2026-10-05T09:05:00Z (svc_ecom_deploy, AKIATARVIA7XQ2DEPLY)",
+            "justification": "Confirmar que el cambio de bucket público (Principal *) para imágenes de producto está documentado en el repositorio IaC y aprobado en un ticket Terraform conocido, verificando que la cuenta de servicio se usa en su propósito habitual desde CI-RUNNER01 y que la política corresponde a un deploy legítimo."
+          }
+        ],
+        "open_questions": [
+          "¿Existe un ticket de cambio Terraform aprobado que autorice el bucket público tarvia-media-public (Principal *) en la ventana 2026-10-05T09:05Z?, cambio pendiente de verificar: determina si la operación es autorización IaC legítima o un bucket realmente no autorizado.",
+          "¿La política pública se aplica a todo el bucket o solo al prefix de imágenes de producto?, afecta al alcance real de exposición y al nivel de riesgo del bucket.",
+          "¿Hay registros de descarga (GetObject) de objetos con datos personales desde el bucket desde el momento de la política pública?, determina si procede escalar al DPO según RB-06."
+        ]
+      },
+      "warnings": [
+        "Hallazgo no confirmado: No hay evidencia de creación de identidades/claves/políticas nuevas (persistencia) ni de descarga de datos personales: GetObject se limitan a imágenes de producto y ningún registro indica información personal del cliente. Motivo: ausencia no demostrada: limitar la conclusión a consultas completas, filtros y ventanas.",
+        "Se corrigió authorized_activity: la salida propuesta no tenía soporte coherente verificable.",
+        "Propuesta descartada por soporte, formato, objetivo o restricción OT: verify_terraform_change_approval sobre CI-RUNNER01 / bucket tarvia-media-public / PutBucketPolicy 2026-10-05T09:05:00Z (svc_ecom_deploy, AKIATARVIA7XQ2DEPLY)."
+      ],
+      "corrected_signals": [
+        "authorized_activity"
+      ],
+      "rejected_findings": 1,
+      "prompt_coverage": {
+        "events": {
+          "unique_records": 103,
+          "included": 103,
+          "omitted": 0,
+          "duplicates_removed": 0,
+          "first": "2026-10-04T22:33:10.000Z",
+          "last": "2026-10-06T09:01:49.663Z"
+        },
+        "related_alerts": {
+          "unique_records": 4,
+          "included": 4,
+          "omitted": 0,
+          "duplicates_removed": 0,
+          "first": "2026-10-05T09:07:03.000Z",
+          "last": "2026-10-05T09:09:25.000Z"
+        },
+        "intel": {
+          "unique_records": 0,
+          "included": 0,
+          "omitted": 0,
+          "duplicates_removed": 0
+        }
+      }
+    },
+    "verdict": {
+      "verdict": "needs_more_info",
+      "confidence": 0.44,
+      "rationale": "Se mantiene la solicitud de información del investigador. Consulta de contexto incompleta: user:svc_ecom_deploy Consulta de contexto incompleta: service:s3://tarvia-media-public Se comprueba la trazabilidad y la coherencia, no el significado técnico de todos los eventos. Los PolicySignals son afirmaciones del LLM."
+    },
+    "related_alerts": [
+      {
+        "alert_id": "ALR-20261005-000184",
+        "created_at": "2026-10-05T09:07:03.000Z",
+        "source_product": "CLOUD",
+        "rule_id": "UC-CLD-003",
+        "rule_name": "Bucket de almacenamiento con acceso público",
+        "severity": "medium",
+        "status": "new",
+        "mitre": {
+          "tactic": "Exfiltration",
+          "technique_id": "T1537",
+          "technique": "Transfer Data to Cloud Account"
+        },
+        "description": "Cambio de ACL o política que expone un bucket.",
+        "entities": {
+          "cloud": {
+            "bucket": "tarvia-media-public",
+            "identity": "svc_ecom_deploy"
+          }
+        },
+        "evidence": {
+          "change": "Policy pública de lectura",
+          "source": "terraform desde runner CI interno"
+        },
+        "related_events": [
+          "CT-0000182"
+        ],
+        "runbook": "RB-06"
+      },
+      {
+        "alert_id": "ALR-20261005-000364",
+        "created_at": "2026-10-05T09:08:47.000Z",
+        "source_product": "CLOUD",
+        "rule_id": "UC-CLD-003",
+        "rule_name": "Bucket de almacenamiento con acceso público",
+        "severity": "medium",
+        "status": "new",
+        "mitre": {
+          "tactic": "Exfiltration",
+          "technique_id": "T1537",
+          "technique": "Transfer Data to Cloud Account"
+        },
+        "description": "Cambio de ACL o política que expone un bucket.",
+        "entities": {
+          "cloud": {
+            "bucket": "tarvia-media-public",
+            "identity": "svc_ecom_deploy"
+          }
+        },
+        "evidence": {
+          "change": "Policy pública de lectura",
+          "source": "terraform desde runner CI interno"
+        },
+        "related_events": [
+          "CT-0000184"
+        ],
+        "runbook": "RB-06"
+      },
+      {
+        "alert_id": "ALR-20261005-000086",
+        "created_at": "2026-10-05T09:08:51.000Z",
+        "source_product": "CLOUD",
+        "rule_id": "UC-CLD-003",
+        "rule_name": "Bucket de almacenamiento con acceso público",
+        "severity": "medium",
+        "status": "new",
+        "mitre": {
+          "tactic": "Exfiltration",
+          "technique_id": "T1537",
+          "technique": "Transfer Data to Cloud Account"
+        },
+        "description": "Cambio de ACL o política que expone un bucket.",
+        "entities": {
+          "cloud": {
+            "bucket": "tarvia-media-public",
+            "identity": "svc_ecom_deploy"
+          }
+        },
+        "evidence": {
+          "change": "Policy pública de lectura",
+          "source": "terraform desde runner CI interno"
+        },
+        "related_events": [
+          "CT-0000181"
+        ],
+        "runbook": "RB-06"
+      },
+      {
+        "alert_id": "ALR-20261005-000271",
+        "created_at": "2026-10-05T09:09:25.000Z",
+        "source_product": "CLOUD",
+        "rule_id": "UC-CLD-003",
+        "rule_name": "Bucket de almacenamiento con acceso público",
+        "severity": "medium",
+        "status": "new",
+        "mitre": {
+          "tactic": "Exfiltration",
+          "technique_id": "T1537",
+          "technique": "Transfer Data to Cloud Account"
+        },
+        "description": "Cambio de ACL o política que expone un bucket.",
+        "entities": {
+          "cloud": {
+            "bucket": "tarvia-media-public",
+            "identity": "svc_ecom_deploy"
+          }
+        },
+        "evidence": {
+          "change": "Policy pública de lectura",
+          "source": "terraform desde runner CI interno"
+        },
+        "related_events": [
+          "CT-0000183"
+        ],
+        "runbook": "RB-06"
+      }
+    ],
+    "evidence": [
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000185",
+        "timestamp": "2026-10-05T09:05:00.000Z",
+        "raw": {
+          "event_id": "CT-0000185",
+          "timestamp": "2026-10-05T09:05:00.000Z",
+          "eventName": "PutBucketPolicy",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "terraform/1.9.5",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public",
+            "policy": "s3:GetObject para Principal * (imágenes de producto)"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-35ef4cbca47a1b7f",
+          "q": "CT-0000185",
+          "desde": "2026-10-04T09:07:34.000Z",
+          "hasta": "2026-10-06T09:07:34.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000127",
+        "timestamp": "2026-10-04T22:33:10.000Z",
+        "raw": {
+          "event_id": "CT-0000127",
+          "timestamp": "2026-10-04T22:33:10.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000076",
+        "timestamp": "2026-10-04T22:54:14.000Z",
+        "raw": {
+          "event_id": "CT-0000076",
+          "timestamp": "2026-10-04T22:54:14.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000121",
+        "timestamp": "2026-10-04T22:58:23.000Z",
+        "raw": {
+          "event_id": "CT-0000121",
+          "timestamp": "2026-10-04T22:58:23.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000062",
+        "timestamp": "2026-10-04T23:29:11.000Z",
+        "raw": {
+          "event_id": "CT-0000062",
+          "timestamp": "2026-10-04T23:29:11.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000037",
+        "timestamp": "2026-10-05T00:28:34.000Z",
+        "raw": {
+          "event_id": "CT-0000037",
+          "timestamp": "2026-10-05T00:28:34.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000104",
+        "timestamp": "2026-10-05T00:36:34.000Z",
+        "raw": {
+          "event_id": "CT-0000104",
+          "timestamp": "2026-10-05T00:36:34.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000161",
+        "timestamp": "2026-10-05T01:24:17.000Z",
+        "raw": {
+          "event_id": "CT-0000161",
+          "timestamp": "2026-10-05T01:24:17.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000147",
+        "timestamp": "2026-10-05T01:55:25.000Z",
+        "raw": {
+          "event_id": "CT-0000147",
+          "timestamp": "2026-10-05T01:55:25.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000170",
+        "timestamp": "2026-10-05T02:02:52.000Z",
+        "raw": {
+          "event_id": "CT-0000170",
+          "timestamp": "2026-10-05T02:02:52.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000002",
+        "timestamp": "2026-10-05T02:11:44.000Z",
+        "raw": {
+          "event_id": "CT-0000002",
+          "timestamp": "2026-10-05T02:11:44.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000009",
+        "timestamp": "2026-10-05T02:12:15.000Z",
+        "raw": {
+          "event_id": "CT-0000009",
+          "timestamp": "2026-10-05T02:12:15.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000073",
+        "timestamp": "2026-10-05T02:36:24.000Z",
+        "raw": {
+          "event_id": "CT-0000073",
+          "timestamp": "2026-10-05T02:36:24.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000088",
+        "timestamp": "2026-10-05T02:37:59.000Z",
+        "raw": {
+          "event_id": "CT-0000088",
+          "timestamp": "2026-10-05T02:37:59.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000017",
+        "timestamp": "2026-10-05T03:17:56.000Z",
+        "raw": {
+          "event_id": "CT-0000017",
+          "timestamp": "2026-10-05T03:17:56.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000066",
+        "timestamp": "2026-10-05T04:13:11.000Z",
+        "raw": {
+          "event_id": "CT-0000066",
+          "timestamp": "2026-10-05T04:13:11.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000025",
+        "timestamp": "2026-10-05T05:15:18.000Z",
+        "raw": {
+          "event_id": "CT-0000025",
+          "timestamp": "2026-10-05T05:15:18.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000122",
+        "timestamp": "2026-10-05T05:55:58.000Z",
+        "raw": {
+          "event_id": "CT-0000122",
+          "timestamp": "2026-10-05T05:55:58.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000145",
+        "timestamp": "2026-10-05T06:34:39.000Z",
+        "raw": {
+          "event_id": "CT-0000145",
+          "timestamp": "2026-10-05T06:34:39.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000067",
+        "timestamp": "2026-10-05T07:30:59.000Z",
+        "raw": {
+          "event_id": "CT-0000067",
+          "timestamp": "2026-10-05T07:30:59.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000166",
+        "timestamp": "2026-10-05T08:46:28.000Z",
+        "raw": {
+          "event_id": "CT-0000166",
+          "timestamp": "2026-10-05T08:46:28.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000181",
+        "timestamp": "2026-10-05T09:05:00.000Z",
+        "raw": {
+          "event_id": "CT-0000181",
+          "timestamp": "2026-10-05T09:05:00.000Z",
+          "eventName": "PutBucketPolicy",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "terraform/1.9.5",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public",
+            "policy": "s3:GetObject para Principal * (imágenes de producto)"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000182",
+        "timestamp": "2026-10-05T09:05:00.000Z",
+        "raw": {
+          "event_id": "CT-0000182",
+          "timestamp": "2026-10-05T09:05:00.000Z",
+          "eventName": "PutBucketPolicy",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "terraform/1.9.5",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public",
+            "policy": "s3:GetObject para Principal * (imágenes de producto)"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000183",
+        "timestamp": "2026-10-05T09:05:00.000Z",
+        "raw": {
+          "event_id": "CT-0000183",
+          "timestamp": "2026-10-05T09:05:00.000Z",
+          "eventName": "PutBucketPolicy",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "terraform/1.9.5",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public",
+            "policy": "s3:GetObject para Principal * (imágenes de producto)"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000184",
+        "timestamp": "2026-10-05T09:05:00.000Z",
+        "raw": {
+          "event_id": "CT-0000184",
+          "timestamp": "2026-10-05T09:05:00.000Z",
+          "eventName": "PutBucketPolicy",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "terraform/1.9.5",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public",
+            "policy": "s3:GetObject para Principal * (imágenes de producto)"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000013",
+        "timestamp": "2026-10-05T09:45:15.000Z",
+        "raw": {
+          "event_id": "CT-0000013",
+          "timestamp": "2026-10-05T09:45:15.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000093",
+        "timestamp": "2026-10-05T09:52:17.000Z",
+        "raw": {
+          "event_id": "CT-0000093",
+          "timestamp": "2026-10-05T09:52:17.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000071",
+        "timestamp": "2026-10-05T10:17:04.000Z",
+        "raw": {
+          "event_id": "CT-0000071",
+          "timestamp": "2026-10-05T10:17:04.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000077",
+        "timestamp": "2026-10-05T10:22:52.000Z",
+        "raw": {
+          "event_id": "CT-0000077",
+          "timestamp": "2026-10-05T10:22:52.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000079",
+        "timestamp": "2026-10-05T10:37:07.000Z",
+        "raw": {
+          "event_id": "CT-0000079",
+          "timestamp": "2026-10-05T10:37:07.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000049",
+        "timestamp": "2026-10-05T10:58:38.000Z",
+        "raw": {
+          "event_id": "CT-0000049",
+          "timestamp": "2026-10-05T10:58:38.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000157",
+        "timestamp": "2026-10-05T11:48:32.000Z",
+        "raw": {
+          "event_id": "CT-0000157",
+          "timestamp": "2026-10-05T11:48:32.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000056",
+        "timestamp": "2026-10-05T11:51:50.000Z",
+        "raw": {
+          "event_id": "CT-0000056",
+          "timestamp": "2026-10-05T11:51:50.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000109",
+        "timestamp": "2026-10-05T11:53:35.000Z",
+        "raw": {
+          "event_id": "CT-0000109",
+          "timestamp": "2026-10-05T11:53:35.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000141",
+        "timestamp": "2026-10-05T12:33:55.000Z",
+        "raw": {
+          "event_id": "CT-0000141",
+          "timestamp": "2026-10-05T12:33:55.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000035",
+        "timestamp": "2026-10-05T12:55:04.000Z",
+        "raw": {
+          "event_id": "CT-0000035",
+          "timestamp": "2026-10-05T12:55:04.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000085",
+        "timestamp": "2026-10-05T13:25:34.000Z",
+        "raw": {
+          "event_id": "CT-0000085",
+          "timestamp": "2026-10-05T13:25:34.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000089",
+        "timestamp": "2026-10-05T14:12:23.000Z",
+        "raw": {
+          "event_id": "CT-0000089",
+          "timestamp": "2026-10-05T14:12:23.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000131",
+        "timestamp": "2026-10-05T14:25:54.000Z",
+        "raw": {
+          "event_id": "CT-0000131",
+          "timestamp": "2026-10-05T14:25:54.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000044",
+        "timestamp": "2026-10-05T14:35:44.000Z",
+        "raw": {
+          "event_id": "CT-0000044",
+          "timestamp": "2026-10-05T14:35:44.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000024",
+        "timestamp": "2026-10-05T14:53:16.000Z",
+        "raw": {
+          "event_id": "CT-0000024",
+          "timestamp": "2026-10-05T14:53:16.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000078",
+        "timestamp": "2026-10-05T14:56:28.000Z",
+        "raw": {
+          "event_id": "CT-0000078",
+          "timestamp": "2026-10-05T14:56:28.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000005",
+        "timestamp": "2026-10-05T15:02:59.000Z",
+        "raw": {
+          "event_id": "CT-0000005",
+          "timestamp": "2026-10-05T15:02:59.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000058",
+        "timestamp": "2026-10-05T15:08:18.000Z",
+        "raw": {
+          "event_id": "CT-0000058",
+          "timestamp": "2026-10-05T15:08:18.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000059",
+        "timestamp": "2026-10-05T15:32:53.000Z",
+        "raw": {
+          "event_id": "CT-0000059",
+          "timestamp": "2026-10-05T15:32:53.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000132",
+        "timestamp": "2026-10-05T15:33:07.000Z",
+        "raw": {
+          "event_id": "CT-0000132",
+          "timestamp": "2026-10-05T15:33:07.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000054",
+        "timestamp": "2026-10-05T15:47:51.000Z",
+        "raw": {
+          "event_id": "CT-0000054",
+          "timestamp": "2026-10-05T15:47:51.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000086",
+        "timestamp": "2026-10-05T16:23:56.000Z",
+        "raw": {
+          "event_id": "CT-0000086",
+          "timestamp": "2026-10-05T16:23:56.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000042",
+        "timestamp": "2026-10-05T16:52:39.000Z",
+        "raw": {
+          "event_id": "CT-0000042",
+          "timestamp": "2026-10-05T16:52:39.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000064",
+        "timestamp": "2026-10-05T18:00:06.000Z",
+        "raw": {
+          "event_id": "CT-0000064",
+          "timestamp": "2026-10-05T18:00:06.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000162",
+        "timestamp": "2026-10-05T18:01:15.000Z",
+        "raw": {
+          "event_id": "CT-0000162",
+          "timestamp": "2026-10-05T18:01:15.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000070",
+        "timestamp": "2026-10-05T18:36:23.000Z",
+        "raw": {
+          "event_id": "CT-0000070",
+          "timestamp": "2026-10-05T18:36:23.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000100",
+        "timestamp": "2026-10-05T19:37:08.000Z",
+        "raw": {
+          "event_id": "CT-0000100",
+          "timestamp": "2026-10-05T19:37:08.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000045",
+        "timestamp": "2026-10-05T20:04:53.000Z",
+        "raw": {
+          "event_id": "CT-0000045",
+          "timestamp": "2026-10-05T20:04:53.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000173",
+        "timestamp": "2026-10-05T20:35:18.000Z",
+        "raw": {
+          "event_id": "CT-0000173",
+          "timestamp": "2026-10-05T20:35:18.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000365",
+        "timestamp": "2026-10-05T22:16:14.000Z",
+        "raw": {
+          "event_id": "CT-0000365",
+          "timestamp": "2026-10-05T22:16:14.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000271",
+        "timestamp": "2026-10-05T22:30:15.000Z",
+        "raw": {
+          "event_id": "CT-0000271",
+          "timestamp": "2026-10-05T22:30:15.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000230",
+        "timestamp": "2026-10-05T22:41:21.000Z",
+        "raw": {
+          "event_id": "CT-0000230",
+          "timestamp": "2026-10-05T22:41:21.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000222",
+        "timestamp": "2026-10-05T23:11:33.000Z",
+        "raw": {
+          "event_id": "CT-0000222",
+          "timestamp": "2026-10-05T23:11:33.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000198",
+        "timestamp": "2026-10-05T23:24:48.000Z",
+        "raw": {
+          "event_id": "CT-0000198",
+          "timestamp": "2026-10-05T23:24:48.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000355",
+        "timestamp": "2026-10-05T23:25:06.000Z",
+        "raw": {
+          "event_id": "CT-0000355",
+          "timestamp": "2026-10-05T23:25:06.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000268",
+        "timestamp": "2026-10-05T23:38:54.000Z",
+        "raw": {
+          "event_id": "CT-0000268",
+          "timestamp": "2026-10-05T23:38:54.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000221",
+        "timestamp": "2026-10-05T23:54:20.000Z",
+        "raw": {
+          "event_id": "CT-0000221",
+          "timestamp": "2026-10-05T23:54:20.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000265",
+        "timestamp": "2026-10-06T00:52:15.000Z",
+        "raw": {
+          "event_id": "CT-0000265",
+          "timestamp": "2026-10-06T00:52:15.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000362",
+        "timestamp": "2026-10-06T02:01:56.000Z",
+        "raw": {
+          "event_id": "CT-0000362",
+          "timestamp": "2026-10-06T02:01:56.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000280",
+        "timestamp": "2026-10-06T02:50:34.000Z",
+        "raw": {
+          "event_id": "CT-0000280",
+          "timestamp": "2026-10-06T02:50:34.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000240",
+        "timestamp": "2026-10-06T04:33:59.000Z",
+        "raw": {
+          "event_id": "CT-0000240",
+          "timestamp": "2026-10-06T04:33:59.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000357",
+        "timestamp": "2026-10-06T05:04:31.000Z",
+        "raw": {
+          "event_id": "CT-0000357",
+          "timestamp": "2026-10-06T05:04:31.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000309",
+        "timestamp": "2026-10-06T07:06:15.000Z",
+        "raw": {
+          "event_id": "CT-0000309",
+          "timestamp": "2026-10-06T07:06:15.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000360",
+        "timestamp": "2026-10-06T07:30:51.000Z",
+        "raw": {
+          "event_id": "CT-0000360",
+          "timestamp": "2026-10-06T07:30:51.000Z",
+          "eventName": "ListObjects",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000310",
+        "timestamp": "2026-10-06T07:46:15.000Z",
+        "raw": {
+          "event_id": "CT-0000310",
+          "timestamp": "2026-10-06T07:46:15.000Z",
+          "eventName": "GetObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": "CT-0000297",
+        "timestamp": "2026-10-06T08:54:31.000Z",
+        "raw": {
+          "event_id": "CT-0000297",
+          "timestamp": "2026-10-06T08:54:31.000Z",
+          "eventName": "PutObject",
+          "eventSource": "s3.amazonaws.com",
+          "awsRegion": "eu-west-1",
+          "sourceIPAddress": "172.16.10.21",
+          "userAgent": "aws-cli/2.17.0 Python/3.11 Linux",
+          "userIdentity": {
+            "type": "IAMUser",
+            "userName": "svc_ecom_deploy",
+            "accessKeyId": "AKIATARVIA7XQ2DEPLY"
+          },
+          "requestParameters": {
+            "bucketName": "tarvia-media-public"
+          },
+          "errorCode": ""
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-0e9a6e34173ee1cb",
+          "q": "akiatarvia7xq2deply",
+          "desde": "2026-10-04T09:07:34.000Z",
+          "hasta": "2026-10-06T09:07:34.000Z",
+          "reason": "Resolver check_access_key_baseline_usage_and_identity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 72,
+          "truncated": false
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000007",
+        "timestamp": "2026-10-05T07:07:24.060Z",
+        "raw": {
+          "event_id": "CI-0000007",
+          "timestamp": "2026-10-05T07:07:24.060Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1378",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 653,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000008",
+        "timestamp": "2026-10-05T07:14:24.060Z",
+        "raw": {
+          "event_id": "CI-0000008",
+          "timestamp": "2026-10-05T07:14:24.060Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1378",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000021",
+        "timestamp": "2026-10-05T08:24:45.967Z",
+        "raw": {
+          "event_id": "CI-0000021",
+          "timestamp": "2026-10-05T08:24:45.967Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1572",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 934,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000022",
+        "timestamp": "2026-10-05T08:33:45.967Z",
+        "raw": {
+          "event_id": "CI-0000022",
+          "timestamp": "2026-10-05T08:33:45.967Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1572",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000027",
+        "timestamp": "2026-10-05T08:38:53.916Z",
+        "raw": {
+          "event_id": "CI-0000027",
+          "timestamp": "2026-10-05T08:38:53.916Z",
+          "pipeline": "vela-assistant",
+          "build_id": "vela-assistant#1602",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 909,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000028",
+        "timestamp": "2026-10-05T08:43:53.916Z",
+        "raw": {
+          "event_id": "CI-0000028",
+          "timestamp": "2026-10-05T08:43:53.916Z",
+          "pipeline": "vela-assistant",
+          "build_id": "vela-assistant#1602",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000023",
+        "timestamp": "2026-10-05T09:28:26.209Z",
+        "raw": {
+          "event_id": "CI-0000023",
+          "timestamp": "2026-10-05T09:28:26.209Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1001",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 1432,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000024",
+        "timestamp": "2026-10-05T09:32:26.209Z",
+        "raw": {
+          "event_id": "CI-0000024",
+          "timestamp": "2026-10-05T09:32:26.209Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1001",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000005",
+        "timestamp": "2026-10-05T11:29:13.565Z",
+        "raw": {
+          "event_id": "CI-0000005",
+          "timestamp": "2026-10-05T11:29:13.565Z",
+          "pipeline": "ecom-frontend",
+          "build_id": "ecom-frontend#1720",
+          "runner": "CI-RUNNER01",
+          "step": "npm ci",
+          "status": "ok",
+          "details": {
+            "installed": 808,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000025",
+        "timestamp": "2026-10-05T11:30:25.047Z",
+        "raw": {
+          "event_id": "CI-0000025",
+          "timestamp": "2026-10-05T11:30:25.047Z",
+          "pipeline": "ecom-frontend",
+          "build_id": "ecom-frontend#1261",
+          "runner": "CI-RUNNER01",
+          "step": "npm ci",
+          "status": "ok",
+          "details": {
+            "installed": 917,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000003",
+        "timestamp": "2026-10-05T11:31:51.884Z",
+        "raw": {
+          "event_id": "CI-0000003",
+          "timestamp": "2026-10-05T11:31:51.884Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1130",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 1190,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000006",
+        "timestamp": "2026-10-05T11:37:13.565Z",
+        "raw": {
+          "event_id": "CI-0000006",
+          "timestamp": "2026-10-05T11:37:13.565Z",
+          "pipeline": "ecom-frontend",
+          "build_id": "ecom-frontend#1720",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000026",
+        "timestamp": "2026-10-05T11:38:25.047Z",
+        "raw": {
+          "event_id": "CI-0000026",
+          "timestamp": "2026-10-05T11:38:25.047Z",
+          "pipeline": "ecom-frontend",
+          "build_id": "ecom-frontend#1261",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000004",
+        "timestamp": "2026-10-05T11:40:51.884Z",
+        "raw": {
+          "event_id": "CI-0000004",
+          "timestamp": "2026-10-05T11:40:51.884Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1130",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000013",
+        "timestamp": "2026-10-05T11:47:39.805Z",
+        "raw": {
+          "event_id": "CI-0000013",
+          "timestamp": "2026-10-05T11:47:39.805Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1299",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 1223,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000014",
+        "timestamp": "2026-10-05T11:56:39.805Z",
+        "raw": {
+          "event_id": "CI-0000014",
+          "timestamp": "2026-10-05T11:56:39.805Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1299",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "failed",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000001",
+        "timestamp": "2026-10-05T12:17:25.372Z",
+        "raw": {
+          "event_id": "CI-0000001",
+          "timestamp": "2026-10-05T12:17:25.372Z",
+          "pipeline": "vela-assistant",
+          "build_id": "vela-assistant#1368",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 837,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000002",
+        "timestamp": "2026-10-05T12:26:25.372Z",
+        "raw": {
+          "event_id": "CI-0000002",
+          "timestamp": "2026-10-05T12:26:25.372Z",
+          "pipeline": "vela-assistant",
+          "build_id": "vela-assistant#1368",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "failed",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000011",
+        "timestamp": "2026-10-05T13:38:27.270Z",
+        "raw": {
+          "event_id": "CI-0000011",
+          "timestamp": "2026-10-05T13:38:27.270Z",
+          "pipeline": "vela-assistant",
+          "build_id": "vela-assistant#1418",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 1346,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000012",
+        "timestamp": "2026-10-05T13:45:27.270Z",
+        "raw": {
+          "event_id": "CI-0000012",
+          "timestamp": "2026-10-05T13:45:27.270Z",
+          "pipeline": "vela-assistant",
+          "build_id": "vela-assistant#1418",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000015",
+        "timestamp": "2026-10-05T14:06:10.150Z",
+        "raw": {
+          "event_id": "CI-0000015",
+          "timestamp": "2026-10-05T14:06:10.150Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1897",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 779,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000016",
+        "timestamp": "2026-10-05T14:12:10.150Z",
+        "raw": {
+          "event_id": "CI-0000016",
+          "timestamp": "2026-10-05T14:12:10.150Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1897",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000019",
+        "timestamp": "2026-10-05T14:36:24.395Z",
+        "raw": {
+          "event_id": "CI-0000019",
+          "timestamp": "2026-10-05T14:36:24.395Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1534",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 1119,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000020",
+        "timestamp": "2026-10-05T14:42:24.395Z",
+        "raw": {
+          "event_id": "CI-0000020",
+          "timestamp": "2026-10-05T14:42:24.395Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1534",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000017",
+        "timestamp": "2026-10-05T16:09:37.308Z",
+        "raw": {
+          "event_id": "CI-0000017",
+          "timestamp": "2026-10-05T16:09:37.308Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1512",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 1098,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000018",
+        "timestamp": "2026-10-05T16:15:37.308Z",
+        "raw": {
+          "event_id": "CI-0000018",
+          "timestamp": "2026-10-05T16:15:37.308Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1512",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000009",
+        "timestamp": "2026-10-05T16:54:42.508Z",
+        "raw": {
+          "event_id": "CI-0000009",
+          "timestamp": "2026-10-05T16:54:42.508Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1478",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 609,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000010",
+        "timestamp": "2026-10-05T16:57:42.508Z",
+        "raw": {
+          "event_id": "CI-0000010",
+          "timestamp": "2026-10-05T16:57:42.508Z",
+          "pipeline": "ecom-api",
+          "build_id": "ecom-api#1478",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000041",
+        "timestamp": "2026-10-06T07:59:08.234Z",
+        "raw": {
+          "event_id": "CI-0000041",
+          "timestamp": "2026-10-06T07:59:08.234Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1693",
+          "runner": "CI-RUNNER01",
+          "step": "build",
+          "status": "ok",
+          "details": {
+            "installed": 718,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000042",
+        "timestamp": "2026-10-06T08:07:08.234Z",
+        "raw": {
+          "event_id": "CI-0000042",
+          "timestamp": "2026-10-06T08:07:08.234Z",
+          "pipeline": "wms-connector",
+          "build_id": "wms-connector#1693",
+          "runner": "CI-RUNNER01",
+          "step": "deploy",
+          "status": "ok",
+          "details": {}
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": "CI-0000035",
+        "timestamp": "2026-10-06T09:01:49.663Z",
+        "raw": {
+          "event_id": "CI-0000035",
+          "timestamp": "2026-10-06T09:01:49.663Z",
+          "pipeline": "ecom-frontend",
+          "build_id": "ecom-frontend#1275",
+          "runner": "CI-RUNNER01",
+          "step": "npm ci",
+          "status": "ok",
+          "details": {
+            "installed": 788,
+            "new_packages": []
+          }
+        }
+      },
+      {
+        "source": "cicd_builds",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-2e04fb95eacfda82",
+          "q": "ci-runner01",
+          "desde": "2026-10-04T09:07:34.000Z",
+          "hasta": "2026-10-06T09:07:34.000Z",
+          "reason": "Resolver check_known_terraform_pipeline_or_approved_change sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 31,
+          "truncated": false
+        }
+      },
+      {
+        "source": "cloudtrail",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-618bcb765c5ad3dd",
+          "q": "tarvia-media-public",
+          "desde": "2026-10-04T09:07:34.000Z",
+          "hasta": "2026-10-06T09:07:34.000Z",
+          "reason": "Resolver check_s3_bucket_acl_or_policy_public_exposure sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 72,
+          "truncated": false
+        }
+      }
+    ]
+  },
+  "trace": [
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "get_alert",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.865895Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "get_alert",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.870456Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "extract_entities",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.871074Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "extract_entities",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.871508Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "extract_indicators",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.871973Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "extract_indicators",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.872384Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "load_runbook",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.872709Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "load_runbook",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.873046Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "get_strategy",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.873386Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "get_strategy",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.873737Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "build_plan",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.874052Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "build_plan",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.874330Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_context",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.874594Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_context",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.881267Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_intel",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.881773Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_intel",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.882076Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "collect_related_events",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.882357Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "collect_related_events",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.922525Z",
+      "count": 1,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "find_related_alerts",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.923028Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "find_related_alerts",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.983181Z",
+      "count": 4,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.983789Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:44.991199Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "plan_searches",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:44.991765Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "plan_searches",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:52.243091Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "search_evidence",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:52.243627Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "search_evidence",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:52.276183Z",
+      "count": 103,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:52.283262Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:52.284629Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "investigation_coverage",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:41:52.286901Z",
+      "proposed": 2,
+      "accepted": 3,
+      "checks": [
+        {
+          "check": "check_access_key_baseline_usage_and_identity",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "akiatarvia7xq2deply"
+        },
+        {
+          "check": "check_source_ip_asn_and_user_agent_anomalies",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_known_terraform_pipeline_or_approved_change",
+          "source": "cicd_builds",
+          "status": "searched",
+          "identifier": "ci-runner01"
+        },
+        {
+          "check": "check_cloud_reconnaissance_calls_get_caller_identity_or_list",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "akiatarvia7xq2deply"
+        },
+        {
+          "check": "check_s3_bucket_acl_or_policy_public_exposure",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "tarvia-media-public"
+        },
+        {
+          "check": "check_unauthorized_external_bucket_access",
+          "source": "cloudtrail",
+          "status": "searched",
+          "identifier": "tarvia-media-public"
+        }
+      ]
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "analyze",
+      "status": "started",
+      "timestamp": "2026-11-08T04:41:52.287360Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "analyze",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.594693Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "decide_verdict",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.595426Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "decide_verdict",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.596105Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "calculate_severity",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.596519Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "calculate_severity",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.597034Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "decide_escalation",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.597436Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "decide_escalation",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.597863Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "recommend_actions",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.598228Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "recommend_actions",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.598659Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "build_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.598985Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "build_ticket",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.599540Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "validate_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.600057Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "validate_ticket",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:42:47.601705Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000450",
+      "stage": "save_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:42:47.603119Z"
+    }
+  ],
+  "decision": null,
+  "note": null,
+  "review_timestamp": null,
+  "review": {
+    "decision": null,
+    "note": null,
+    "timestamp": null
+  }
+}

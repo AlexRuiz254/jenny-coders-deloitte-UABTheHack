@@ -203,25 +203,13 @@ class TriageOrchestrator:
             alert=alert, runbook_text=runbook_text, context=context,
             intel=intel, evidence=evidence, related_alerts=related_alerts
         )
-        for row in final_coverage:
-            if row["status"] == "pending":
-                question = f"Comprobación pendiente del runbook: {row['check']}"
-                if row.get("identifier"):
-                    question += f" ({row['source']}: {row['identifier']})"
-                question += ". " + row.get("limitation", "Sin consulta completa para el identificador y la ventana requeridos.")
-                if question not in analysis.open_questions:
-                    analysis.open_questions.append(question)
-        for item in evidence:
-            if item.raw.get("truncated"):
-                question = f"Consulta incompleta en {item.source}: {item.raw.get('q', '')}. Se alcanzó el límite de la API."
-                if question not in analysis.open_questions:
-                    analysis.open_questions.append(question)
-                analysis.signals.blocked_before_effect = False
+        # La cobertura técnica queda en diagnostics. El investigador conserva
+        # únicamente lagunas relevantes y valida el bloqueo con sus consultas.
 
         # Aplicar los motores existentes a los resultados del investigador.
         verdict = call(
             "decide_verdict", self.verdicts.decide,
-            analysis=analysis, evidence=evidence, context=context
+            analysis=analysis, evidence=evidence, context=context, alert=alert
         )
         severity = call(
             "calculate_severity", self.severity.calculate,
@@ -234,7 +222,8 @@ class TriageOrchestrator:
         )
         actions = call(
             "recommend_actions", self.actions.recommend,
-            analysis=analysis, context=context, verdict=verdict, severity=severity
+            analysis=analysis, context=context, verdict=verdict, severity=severity,
+            alert=alert, evidence=evidence
         )
 
         # El constructor produce el ticket; el repositorio lo persiste.
@@ -261,6 +250,7 @@ class TriageOrchestrator:
                 "search_plan": searches.model_dump(mode="json"),
                 "search_diagnostics": diagnostics,
                 "analysis": analysis.model_dump(mode="json"),
+                "analysis_diagnostics": getattr(self.investigator, "analysis_diagnostics", {}),
                 "verdict": verdict.model_dump(mode="json"),
                 "related_alerts": related_alerts,
                 "evidence": [item.model_dump(mode="json") for item in evidence],

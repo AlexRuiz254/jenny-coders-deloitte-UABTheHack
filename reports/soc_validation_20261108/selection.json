@@ -1,0 +1,13 @@
+{
+  "selection_rule": "Primera alerta pendiente del dataset por categoría, antes de ejecutar el LLM",
+  "alerts": [
+    "ALR-20261005-000427",
+    "ALR-20261005-000272",
+    "ALR-20261005-000450"
+  ],
+  "excluded_previous": [
+    "ALR-20261005-000356",
+    "ALR-20261005-000082",
+    "ALR-20261005-000261"
+  ]
+}

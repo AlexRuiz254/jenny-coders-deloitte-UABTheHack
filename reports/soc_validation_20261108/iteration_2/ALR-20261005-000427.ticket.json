@@ -1,0 +1,61 @@
+{
+  "ticket_id": "TRIAGE-32cf24fd-1793-45c7-bd27-56f05f487a09",
+  "alert_ids": [
+    "ALR-20261005-000427"
+  ],
+  "title": "Escaneo de endpoint LuCI bloqueado por WAF",
+  "verdict": "true_positive",
+  "confidence": 0.8,
+  "severity": "medium",
+  "summary": "El WAF bloqueó un intento de inyección (regla 932150 'Remote Command Execution') en la ruta /cgi-bin/luci/;stok=/locale del host www.tarvia.example desde la IP 198.18.11.240 (RU), con método GET, user_agent zgrab/0.x y status 403 a las 2026-10-04T23:18:00Z. La alerta ALR-20261005-000427 referencia exactamente el evento WAF-0001904 recuperado, confirmando la relación evento–alerta dentro de la ventana 2026-10-03T23:19:27Z–2026-10-05T23:19:27Z (count=1, truncated=false). La IP 198.18.11.240 aparece en un único registro del WAF dentro de la ventana (count=1, truncated=false), sin evidencia de accesos correctos o actividad posterior del mismo origen. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "waf",
+      "event_id": "WAF-0001904",
+      "finding": "El WAF bloqueó un intento de inyección (regla 932150 'Remote Command Execution') en la ruta /cgi-bin/luci/;stok=/locale del host www.tarvia.example desde la IP 198.18.11.240 (RU), con método GET, user_agent zgrab/0.x y status 403 a las 2026-10-04T23:18:00Z."
+    },
+    {
+      "source": "waf",
+      "finding": "Consulta QRY-5a6cf132fa3d0149 literal en waf: q='WAF-0001904'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: El WAF bloqueó un intento de inyección (regla 932150 'Remote Command Execution') en la ruta /cgi-bin/luci/;stok=/locale del host www.tarvia.example desde la IP 198.18.11.240 (RU), con método GET, user_agent zgrab/0.x y status 403 a las 2026-10-04T23:18:00Z. La alerta ALR-20261005-000427 referencia exactamente el evento WAF-0001904 recuperado, confirmando la relación evento–alerta dentro de la ventana 2026-10-03T23:19:27Z–2026-10-05T23:19:27Z (count=1, truncated=false)."
+    },
+    {
+      "source": "waf",
+      "finding": "Consulta QRY-72ba6ce5ea4019fd literal en waf: q='198.18.11.240'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_waf_action_blocked_or_passed_to_backend sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: La IP 198.18.11.240 aparece en un único registro del WAF dentro de la ventana (count=1, truncated=false), sin evidencia de accesos correctos o actividad posterior del mismo origen."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "block_ioc",
+      "target": "198.18.11.240",
+      "requires_approval": false,
+      "justification": "Origen externo (RU) que intentó una firma SQLi/Remote Command Execution bloqueada (status 403) contra la tienda online; su bloqueo evita reintentos de explotación de la ruta /cgi-bin/luci/. Permitida a N1 para un IOC concreto en proxy, correo o EDR."
+    }
+  ],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": "Veredicto validado: true_positive; severidad final: medium. No se cumplen criterios de escalado obligatorio según la política SOC ni se han comunicado señales específicas de compromiso. Mantener la investigación en N1."
+  },
+  "severity_rationale": "Severidad inicial: low. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: medium. Sin ajuste: analysis.signals no indica factores de subida ni bloqueo completo. Severidad final: medium.",
+  "affected": {
+    "ips": [
+      "198.18.11.240"
+    ],
+    "urls": [
+      "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+    ],
+    "business_services": [
+      "Tienda online y app"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1190"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Existe algún cambio aprobado (pentest/autorización) para la IP 198.18.11.240 o la ruta atacada en la ventana? Afecta a la clasificación como actividad autorizada.",
+    "¿Hubo accesos correctos (ecom_account) o cambios de email/dirección/compra tras el escaneo? Afecta a la posibilidad de ATO/fraude asociado."
+  ],
+  "triage_seconds": 19.97611340000003
+}
