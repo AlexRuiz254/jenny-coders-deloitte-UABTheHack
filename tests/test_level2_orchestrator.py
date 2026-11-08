@@ -2,6 +2,8 @@
 from copy import deepcopy
 from types import SimpleNamespace
 from unittest.mock import Mock, call, create_autospec
+import json
+import sys
 
 import pytest
 
@@ -87,9 +89,11 @@ def test_forwarding_real_method_names_models_and_rationales():
     assert [i.alert_id for i in kwargs["investigations"]] == ["A", "B"]
     assert all(i.analysis is not None for i in kwargs["investigations"])
     args, kwargs = h.tickets.build_and_save.call_args
-    assert args[1]["justification"] == "Razón de veredicto"
-    assert args[1]["rationale"] == "Razón de severidad"
-    assert all("Pregunta N2" in t.open_questions for t in args[2])
+    assert isinstance(args[1], IncidentDecisionResult)
+    assert args[1].verdict_rationale == "Razón de veredicto"
+    assert args[1].severity_rationale == "Razón de severidad"
+    assert args[1].open_questions == ["Pregunta N2"]
+    assert args[2] == list(h.individual.values())
     assert kwargs["trace"][0]["source_ticket_ids"] == ["N1-A", "N1-B"]
     assert output[0].ticket_id == "INC-A-B"
     assert h.individual == before
@@ -280,3 +284,58 @@ def test_two_independent_attacks():
 def test_isolated_alert_keeps_its_incident():
     h = Harness(("A",))
     assert h.service.run(["A"])[0].alert_ids == ["A"]
+
+
+def test_cli_wires_real_component_factories(monkeypatch, tmp_path, capsys):
+    import dotenv
+    import src.data.soc_api_client as api_module
+    import src.data.ticket_repository as repository_module
+    import src.triage.triage_orchestrator as n1_module
+    import src.triage.level2.incident_grouper as group_module
+    import src.triage.level2.incident_decision_service as decision_module
+    import src.triage.level2.incident_ticket_service as ticket_module
+    import src.triage.level2.level2_orchestrator as module
+
+    n1_path, n2_path = tmp_path / "n1.sqlite3", tmp_path / "n2.sqlite3"
+    n1_store, n2_store, api, n1 = Mock(), Mock(), Mock(), Mock()
+    repositories = Mock(side_effect=[n1_store, n2_store])
+    api_factory, n1_factory = Mock(return_value=api), Mock(return_value=n1)
+    grouper, decisions, tickets = Mock(), Mock(), Mock()
+    group_factory, decision_factory = Mock(return_value=grouper), Mock(return_value=decisions)
+    ticket_factory = Mock(return_value=tickets)
+    runner = Mock()
+    output = make_ticket("INC-A", ["A"])
+    runner.run.return_value = [output]
+    runner_factory = Mock(return_value=runner)
+    monkeypatch.setattr(dotenv, "load_dotenv", Mock())
+    monkeypatch.setattr(repository_module, "TicketRepository", repositories)
+    monkeypatch.setattr(api_module, "SOCAPIClient", api_factory)
+    monkeypatch.setattr(n1_module, "create_orchestrator", n1_factory)
+    monkeypatch.setattr(group_module, "IncidentGrouper", group_factory)
+    monkeypatch.setattr(decision_module, "IncidentDecisionService", decision_factory)
+    monkeypatch.setattr(ticket_module, "IncidentTicketService", ticket_factory)
+    monkeypatch.setattr(module, "Level2Orchestrator", runner_factory)
+    monkeypatch.setattr(sys, "argv", ["n2", "A", "A", "--api-url", "http://soc:8765",
+                                      "--n1-db", str(n1_path), "--n2-db", str(n2_path)])
+    module._main()
+    assert repositories.call_args_list == [call(n1_path), call(n2_path)]
+    api_factory.assert_called_once_with("http://soc:8765", store=n1_store)
+    ticket_factory.assert_called_once_with(repository=n2_store)
+    assert runner_factory.call_args.kwargs == {
+        "triage": n1, "api": api, "grouper": grouper, "decisions": decisions, "tickets": tickets,
+    }
+    runner.run.assert_called_once_with(["A", "A"])
+    assert json.loads(capsys.readouterr().out)[0]["ticket_id"] == output.ticket_id
+    api.close.assert_called_once()
+    n1_store.close.assert_called_once()
+    n2_store.close.assert_called_once()
+
+
+def test_cli_rejects_shared_database_before_creating_files(monkeypatch, tmp_path):
+    from src.triage.level2.level2_orchestrator import _main
+    path = tmp_path / "same.sqlite3"
+    monkeypatch.setattr(sys, "argv", ["n2", "A", "--n1-db", str(path), "--n2-db", str(path)])
+    with pytest.raises(SystemExit) as caught:
+        _main()
+    assert caught.value.code == 2
+    assert not path.exists()

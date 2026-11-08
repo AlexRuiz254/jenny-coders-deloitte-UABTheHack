@@ -2,9 +2,9 @@
 
 N1 guarda y reutiliza sus investigaciones. Se leen sus artefactos persistidos,
 sin reconstruir análisis a partir de tickets ni repetir consultas de alertas.
-Solo el servicio de tickets persiste N2. Actualmente requiere un repositorio
-separado del de N1: su búsqueda por alerta no distingue ambos niveles y el
-repositorio rechaza dos tickets de la misma alerta salvo reprocesamiento.
+Solo el servicio de tickets persiste N2. Para repetir el pipeline se utiliza un
+repositorio separado: N2 distingue los niveles, pero la caché actual de N1 aún
+devuelve el último ticket por alerta sin filtrar N1/N2.
 No hay transacción global: los guardados anteriores no se deshacen al fallar.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ class IncidentDecisionService(Protocol):
 
 class IncidentTicketService(Protocol):
     def build_and_save(
-        self, group: IncidentGroup, decision: dict, investigations: list[Ticket],
+        self, group: IncidentGroup, decision: IncidentDecisionResult, investigations: list[Ticket],
         *, trace: list[dict],
     ) -> Ticket: ...
 
@@ -194,22 +194,15 @@ class Level2Orchestrator:
         consolidated = []
         saved_ids: set[str] = set()
         for group, ids, members, decision in evaluated:
-            # El servicio de Persona 3 utiliza otros nombres para las razones.
-            payload = decision.model_dump(mode="json")
-            payload.update(justification=decision.verdict_rationale, rationale=decision.severity_rationale)
-            # Su normalizador de Ticket solo conserva preguntas de las entradas.
-            # Transportar las de N2 en copias, manteniendo intactos los tickets N1.
+            # El servicio real acepta IncidentDecisionResult sin reconstruirlo.
             source_tickets = [by_alert[alert_id] for alert_id in ids]
-            ticket_inputs = [ticket.model_copy(update={"open_questions": list(dict.fromkeys(
-                ticket.open_questions + decision.open_questions
-            ))}) for ticket in source_tickets]
             trace = [{"stage": "consolidate_incident", "incident_id": group.incident_id,
                       "source_ticket_ids": [ticket.ticket_id for ticket in source_tickets],
                       "correlation_reason": group.correlation_reason,
                       "decision": decision.model_dump(mode="json")}]
             ticket = self._call(
                 "IncidentTicketService.build_and_save", self.tickets.build_and_save,
-                group, payload, ticket_inputs, trace=trace,
+                group, decision, source_tickets, trace=trace,
             )
             ticket = self._check_ticket(ticket, ids, "IncidentTicketService.build_and_save")
             if ticket.ticket_id != group.incident_id:
@@ -219,3 +212,53 @@ class Level2Orchestrator:
             saved_ids.add(ticket.ticket_id)
             consolidated.append(ticket)
         return consolidated
+
+
+def _main() -> None:
+    """Ejecutar N2 desde Python con API, LLM y SQLite reales, sin servicios falsos."""
+    import argparse
+    import json
+    from pathlib import Path
+
+    from dotenv import load_dotenv
+    from src.data.soc_api_client import SOCAPIClient
+    from src.data.ticket_repository import TicketRepository
+    from src.triage.triage_orchestrator import create_orchestrator
+    from src.triage.level2.incident_grouper import IncidentGrouper as Grouper
+    from src.triage.level2.incident_decision_service import IncidentDecisionService as Decisions
+    from src.triage.level2.incident_ticket_service import IncidentTicketService as Tickets
+
+    root = Path(__file__).resolve().parents[3]
+    parser = argparse.ArgumentParser(description="Triaje N2: investigar, agrupar, decidir y guardar incidentes")
+    parser.add_argument("alert_ids", nargs="+")
+    parser.add_argument("--api-url", default="http://127.0.0.1:8001")
+    parser.add_argument("--n1-db", type=Path, default=root / "tickets.sqlite3")
+    parser.add_argument("--n2-db", type=Path, default=root / "tickets_n2.sqlite3")
+    parser.add_argument("--dataset-root", type=Path, default=root / "RepositoriDeloitte")
+    parser.add_argument("--window-hours", type=float, default=24)
+    args = parser.parse_args()
+    if args.n1_db.resolve() == args.n2_db.resolve():
+        parser.error("N1 y N2 requieren bases distintas: la caché N1 no filtra por nivel")
+
+    load_dotenv(root / ".env")
+    grouper = Grouper(window_hours=args.window_hours)
+    n1_store = TicketRepository(args.n1_db)
+    n2_store = TicketRepository(args.n2_db)
+    api = SOCAPIClient(args.api_url, store=n1_store)
+    try:
+        n1 = create_orchestrator(api, n1_store, dataset_root=args.dataset_root)
+        service = Level2Orchestrator(
+            triage=n1, api=api, grouper=grouper, decisions=Decisions(),
+            tickets=Tickets(repository=n2_store),
+        )
+        result = service.run(args.alert_ids)
+        print(json.dumps([ticket.model_dump(mode="json", exclude_none=True) for ticket in result],
+                         ensure_ascii=False, indent=2))
+    finally:
+        api.close()
+        n1_store.close()
+        n2_store.close()
+
+
+if __name__ == "__main__":
+    _main()

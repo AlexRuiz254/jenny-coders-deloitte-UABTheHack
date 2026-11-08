@@ -1,13 +1,15 @@
-"""Integración parcial con dataset/API/SQLite reales y LLM explícitamente simulado.
+"""Integración N1/N2 con dataset/API/SQLite reales y LLM explícitamente simulado.
 
-No es una prueba de IA real ni de red HTTP. El transporte ejecuta FastAPI ASGI
-original en memoria. El caso de persistencia N2 requiere importar el módulo de
-Persona 3; su incompatibilidad conocida con Python 3.13 se informa como XFAIL.
+No es una prueba de IA real. Por defecto el transporte ejecuta FastAPI ASGI
+original en memoria; TARVIA_SOC_TEST_URL permite usar la API por HTTP real.
+No sustituir ni omitir la importación del servicio de tickets:
+la regresión de ForwardRef debe fallar si reaparece, sin convertirla en XFAIL.
 """
 import asyncio
 from collections import Counter
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -16,7 +18,7 @@ from urllib.parse import unquote, urlsplit
 
 import pytest
 import requests
-from requests.adapters import BaseAdapter
+from requests.adapters import BaseAdapter, HTTPAdapter
 
 from src.data.soc_api_client import SOCAPIClient
 from src.data.ticket_repository import TicketRepository
@@ -69,6 +71,17 @@ class ASGITransport(BaseAdapter):
         pass
 
 
+class CountingHTTPTransport(HTTPAdapter):
+    """HTTP real; contar peticiones para verificar reutilización de investigaciones."""
+    def __init__(self):
+        super().__init__()
+        self.calls = Counter()
+
+    def send(self, request, **kwargs):
+        self.calls[unquote(urlsplit(request.url).path)] += 1
+        return super().send(request, **kwargs)
+
+
 class ScriptedLLM:
     """Doble de prueba: nunca emite conclusiones de ataque o autorización."""
     def __init__(self):
@@ -91,13 +104,18 @@ class ScriptedLLM:
 
 @pytest.fixture(scope="module")
 def integrated_n1(tmp_path_factory):
-    spec = importlib.util.spec_from_file_location("phase2_official_api", ROOT / "RepositoriDeloitte/06_herramientas/mock_soc_api.py")
-    official = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(official)
+    url = os.environ.get("TARVIA_SOC_TEST_URL", "").rstrip("/")
+    if url:
+        transport = CountingHTTPTransport()
+    else:
+        spec = importlib.util.spec_from_file_location("phase2_official_api", ROOT / "RepositoriDeloitte/06_herramientas/mock_soc_api.py")
+        official = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(official)
+        transport = ASGITransport(official.app)
+        url = "http://dataset"
     store = TicketRepository(tmp_path_factory.mktemp("n1-phase2") / "n1.sqlite3")
-    api = SOCAPIClient("http://dataset", store=store)
-    transport = ASGITransport(official.app)
-    api.session.mount("http://dataset", transport)
+    api = SOCAPIClient(url, store=store)
+    api.session.mount(url + "/", transport)
     llm = ScriptedLLM()
     n1 = create_orchestrator(api, store, llm=llm)
     tickets = [n1.run(key) for key in IDS]
@@ -148,12 +166,10 @@ def test_shared_repository_rejects_n1_n2_duplicate_scope(integrated_n1):
                     "details": {"ticket": merged.model_dump(mode="json", exclude_none=True)}}, [])
 
 
-def test_real_n2_ticket_persistence_and_idempotency_if_service_imports(integrated_n1, tmp_path):
+def test_real_n2_ticket_persistence_and_idempotency(integrated_n1, tmp_path):
     probe = subprocess.run([sys.executable, "-B", "-c",
                             "from src.triage.level2.incident_ticket_service import IncidentTicketService"],
                            capture_output=True, text=True, cwd=ROOT)
-    if probe.returncode and "_compat_forward_eval() got multiple values" in probe.stderr:
-        pytest.xfail("Bloqueo externo: IncidentTicketService altera ForwardRef de forma incompatible con Python 3.13")
     assert probe.returncode == 0, probe.stderr
     from src.triage.level2.incident_ticket_service import IncidentTicketService
     api, store, n1, source, investigations, transport, llm = integrated_n1
@@ -162,13 +178,48 @@ def test_real_n2_ticket_persistence_and_idempotency_if_service_imports(integrate
                                 decisions=IncidentDecisionService(),
                                 tickets=IncidentTicketService(repository=n2_store))
     first = runner.run(IDS)
+    calls = dict(transport.calls)
+    llm_calls = llm.calls
     second = runner.run(list(reversed(IDS)))
     assert {t.ticket_id for t in first} == {t.ticket_id for t in second}
     assert len(first) == 3 and n2_store.stats()["tickets"] == 3
     assert store.stats()["tickets"] == len(IDS)
+    assert dict(transport.calls) == calls and llm.calls == llm_calls
+    assert {frozenset(t.alert_ids) for t in first} == {frozenset(LATRO), frozenset(MINER), frozenset({ISOLATED})}
+    by_alert = {t.alert_ids[0]: t for t in source}
     for ticket in first:
         record = n2_store.get(ticket.ticket_id)
         assert validate_ticket(record["details"]["ticket"]) == ticket
+        assert record["details"]["level"] == "N2"
+        assert record["details"]["decision_verdict"] == ticket.verdict
+        assert record["details"]["decision_severity"] == ticket.severity
+        assert set(record["details"]["source_ticket_ids"]) == {by_alert[i].ticket_id for i in ticket.alert_ids}
         assert record["trace"][0]["source_ticket_ids"]
         assert "Justificación de agrupación" in ticket.summary
         assert ticket.evidence
+        assert ticket.severity_rationale
+        assert ticket.escalation is not None
+        assert {e.event_id for e in ticket.evidence} >= {e.event_id for i in ticket.alert_ids for e in by_alert[i].evidence}
+        decision = record["trace"][0]["decision"]
+        assert decision["verdict_rationale"] in ticket.summary
+        assert decision["severity_rationale"] == ticket.severity_rationale
+        assert set(decision["open_questions"]) <= set(ticket.open_questions)
+        assert decision["verdict"] == ticket.verdict
+        assert decision["escalation"] == ticket.escalation.model_dump(mode="json")
+    mode = "HTTP REAL" if isinstance(transport, CountingHTTPTransport) else "ASGI EN MEMORIA"
+    print(f"\nDEMO N2 [{mode}; LLM SIMULADO]: 6 alertas -> 3 incidentes (3 + 2 + 1).")
+    print("SQLite N1:", store.db_path)
+    print("SQLite N2:", n2_store.db_path)
+    print("Segunda ejecución: mismos IDs; 6 tickets N1 y 3 N2, sin nuevas consultas ni llamadas LLM.")
+
+
+@pytest.mark.parametrize("core_first", [False, True])
+def test_ticket_service_import_does_not_patch_typing(core_first):
+    script = "import typing; original = typing.ForwardRef._evaluate; "
+    if core_first:
+        script += "import src.triage.models; "
+    script += ("from src.triage.level2.incident_ticket_service import IncidentTicketService; "
+               "assert typing.ForwardRef._evaluate is original")
+    result = subprocess.run([sys.executable, "-B", "-c", script],
+                            capture_output=True, text=True, cwd=ROOT)
+    assert result.returncode == 0, result.stderr
