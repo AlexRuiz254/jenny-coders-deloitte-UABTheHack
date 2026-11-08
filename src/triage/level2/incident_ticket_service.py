@@ -862,7 +862,7 @@ class IncidentTicketService:
         )
 
         # Si no tiene marcas explícitas N2 ni coincide con el incident_id, se descarta
-        if not (is_explicit_n2 or matches_incident_id):
+        if not matches_incident_id:
             return False
 
         # 3. Regla de correspondencia de alertas agrupadas

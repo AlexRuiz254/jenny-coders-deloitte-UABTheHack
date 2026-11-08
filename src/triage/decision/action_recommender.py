@@ -8,6 +8,7 @@ from src.triage.models import (
     Analysis,
     ContextSnapshot,
     Evidence,
+    IntelEntry,
     ProposedAction,
     RawAlert,
     SeverityDecision,
@@ -40,6 +41,7 @@ class ActionRecommender:
         severity: SeverityDecision,
         alert: RawAlert | None = None,
         evidence: list[Evidence] | None = None,
+        intel: list[IntelEntry] | None = None,
     ) -> list[TicketAction]:
         """Filtrar por veredicto validado, aplicar permisos y eliminar duplicados.
 
@@ -56,6 +58,11 @@ class ActionRecommender:
             if isinstance(cloud, dict) and cloud.get("bucket"):
                 cloud_review = ProposedAction(action="verify_cloud_change", target=cloud["bucket"],
                     justification="Verificar con el responsable cloud la aprobación, el alcance público y la clasificación del bucket antes de proponer desactivar claves o aislar el runner; el cambio observado no demuestra compromiso de esas entidades.")
+                preferred = next((item for item in analysis.proposed_actions
+                                  if item.action == "verify_authorization"
+                                  and item.target.casefold() == cloud["bucket"].casefold()), None)
+                if preferred:
+                    cloud_review = preferred.model_copy(deep=True)
         for proposed in analysis.proposed_actions:
             action = proposed.model_copy(update={
                 "action": proposed.action.strip().casefold(),
@@ -66,7 +73,18 @@ class ActionRecommender:
                 continue
             if cloud_review and action.action in {"disable_access_key", "isolate_host", "disable_user"}:
                 action = cloud_review
+            if (cloud_review and action.action not in CONTAINMENT_ACTIONS
+                    and cloud_review.target.casefold() in action.target.casefold()
+                    and re.search(r"verif|revis|valid|confirm", action.action, re.I)
+                    and re.search(r"autoriza|aproba|cambio|pol[ií]tica|bucket", action.justification, re.I)):
+                action = cloud_review
             containment = action.action in CONTAINMENT_ACTIONS
+            if (containment and evidence is not None
+                    and action.action in {"disable_user", "reset_password", "revoke_sessions", "isolate_host", "disable_access_key"}
+                    and not self._has_target_support(action, analysis, context, evidence, intel or [])):
+                action = ProposedAction(action="verify_target_activity", target=action.target,
+                    justification="Verificar compromiso de este objetivo y conservar evidencias antes de proponer contención; los hallazgos validados no sustentan la medida disruptiva.")
+                containment = False
             if not containment and (action.action.startswith(("close", "cerrar")) or action.action == "mark_as_benign"):
                 if verdict.verdict == "needs_more_info" or severity.severity in {"high", "critical"}:
                     continue
@@ -143,6 +161,43 @@ class ActionRecommender:
         if cloud_review and verdict.verdict == "needs_more_info" and not recommendations:
             recommendations.append(self._check_action_policy(cloud_review, context))
         return recommendations
+
+    @staticmethod
+    def _has_target_support(action, analysis, context, evidence, intel) -> bool:
+        from src.triage.investigation.investigation_agent import InvestigationAgent
+        from src.triage.ingestion.entities import extract_entities
+        refs = {ref for finding in analysis.findings for ref in finding.evidence_ids}
+        wanted = action.target.casefold()
+        field = ("host" if action.action == "isolate_host" else
+                 "key" if action.action == "disable_access_key" else "user")
+        for event in evidence:
+            if not event.event_id or event.event_id not in refs or event.source == "changes":
+                continue
+            # El contexto identifica el activo, pero el evento debe contener el objetivo.
+            direct = InvestigationAgent._known_identifiers({}, ContextSnapshot(), [event])
+            targets = direct[field]
+            if field == "user":
+                canonical = extract_entities({"entities": {"users": [wanted]}}).users
+                observed = extract_entities({"entities": {"users": list(targets)}}).users
+                linked = bool(set(canonical) & set(observed))
+            else:
+                linked = wanted in targets
+                if field == "host" and not linked:
+                    asset = next((a for a in context.assets if wanted in {
+                        str(a.get(k, "")).casefold() for k in ("hostname", "asset_id", "ip")}), None)
+                    linked = bool(asset and targets & {str(asset.get(k, "")).casefold() for k in ("hostname", "asset_id", "ip")})
+            if not linked:
+                continue
+            support = InvestigationAgent._claim_support(alert={}, events=[event], evidence=evidence,
+                context=context, findings=analysis.findings, intel=intel)
+            required = {"malicious_execution", "credentials_compromised"} if field in {"host", "key"} else {"credentials_compromised", "persistence"}
+            if field == "user" and event.source not in {"idp_audit", "cloudtrail"}:
+                required.discard("persistence")
+            if action.action == "disable_user" and event.source not in {"idp_signins", "idp_audit", "vpn", "cloudtrail"}:
+                continue
+            if any(getattr(analysis.signals, name) and name in support for name in required):
+                return True
+        return False
 
     def _check_action_policy(
         self, action: ProposedAction, context: ContextSnapshot,

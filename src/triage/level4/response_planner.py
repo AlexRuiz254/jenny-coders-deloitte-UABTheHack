@@ -192,6 +192,10 @@ class ResponsePlanner:
                 if not kind or not area:
                     executable = False
                     risks.append("Faltan tipo/zona del activo; revisión manual de permisos.")
+                if ("service_owner" in roles and not asset.get("owner_upn")
+                        and not (service or {}).get("responsable")):
+                    executable = False
+                    risks.append("No consta el responsable de este servicio en CMDB/catálogo; identificarlo y coordinar la respuesta antes de autorizar aislamiento.")
                 impact = f"Puede interrumpir {asset.get('business_service') or 'el servicio del activo'} y sus dependencias."
             elif action in {"disable_user", "revoke_sessions", "reset_password"}:
                 key = target.casefold()

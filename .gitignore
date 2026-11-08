@@ -24,6 +24,7 @@ pip-wheel-metadata/
 
 venv/
 .venv/
+.venv-*/
 env/
 .env/
 ENV/
@@ -106,7 +107,11 @@ temp/
 
 *.sqlite
 *.sqlite3
+*.sqlite3-*
 *.db
+
+# El simulador oficial puede registrar approval_token; nunca publicar su log.
+/RepositoriDeloitte/06_herramientas/containment_log.jsonl
 
 # ==========================================
 # SISTEMA OPERATIVO

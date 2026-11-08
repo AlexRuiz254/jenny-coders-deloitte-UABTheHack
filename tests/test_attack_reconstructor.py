@@ -450,6 +450,8 @@ def test_7_patient_zero_distinguished_from_earliest_observed_event() -> None:
                     "hostname": "WS-BCN-707",
                     "url": "https://phish-tarvia.example/login",
                     "message_id": "<pz-msg@phish.example>",
+                    "verdict": "phishing",
+                    "action": "allowed",
                 },
             ),
             # Ejecución posterior en el mismo equipo y usuario (08:32Z)
@@ -480,6 +482,25 @@ def test_7_patient_zero_distinguished_from_earliest_observed_event() -> None:
     assert "WS-BCN-707" in result.patient_zero
     assert "elena.ros" in result.patient_zero
     assert result.patient_zero.first_observed_event_id == "SQL-BENIGN-000"
+    assert result.patient_zero.status == "hypothesis"  # Mismo equipo/usuario no prueba causalidad.
+
+
+def test_ordinary_click_and_blocked_attempt_do_not_confirm_attack_origin():
+    click = Evidence(source="email_clicks", event_id="CLK-ORDINARY", timestamp="2026-10-08T08:00:00Z",
+        raw={"user": "alice", "hostname": "WS-1", "url": "https://shop.example/products", "action": "allowed"})
+    execution = Evidence(source="edr_events", event_id="EDR-EXEC", timestamp="2026-10-09T08:00:00Z",
+        raw={"user": "alice", "hostname": "WS-1", "event_type": "process_start", "process_name": "powershell.exe",
+             "command_line": "powershell -EncodedCommand AAA="})
+    result = AttackReconstructor().reconstruct({"incident_id": "INC-CAUSAL", "evidence": [click, execution]})
+    assert not result.timeline[0].is_suspicious
+    assert result.initial_access.status == "undetermined"
+    assert result.patient_zero.status == "hypothesis"
+    blocked = Evidence(source="waf", event_id="WAF-BLOCKED", timestamp="2026-10-09T07:59:00Z",
+        raw={"hostname": "WS-1", "rule_id": "UC-WEB-001", "action": "blocked"})
+    execution.raw["parent_event_id"] = blocked.event_id
+    result = AttackReconstructor().reconstruct({"incident_id": "INC-CAUSAL", "evidence": [blocked, execution]})
+    assert result.initial_access.status == "hypothesis"
+    assert not result.root_cause.is_confirmed
 
 
 # ---------------------------------------------------------------------------
@@ -605,6 +626,7 @@ def test_10_preservation_of_original_references_and_schema_export() -> None:
         "process_name": "sh",
         "command_line": "sh -c 'id; cat /etc/passwd'",
         "rule_id": "UC-EDR-009",
+        "parent_event_id": "WAF-1001",  # Nexo explícito, no solo la misma IP y host.
     }
 
     bundle = InvestigationBundle(

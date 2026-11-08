@@ -54,7 +54,8 @@ class ASGITransport(BaseAdapter):
         messages = []
 
         async def receive():
-            return {"type": "http.request", "body": b"", "more_body": False}
+            body = request.body or b""
+            return {"type": "http.request", "body": body.encode() if isinstance(body, str) else body, "more_body": False}
 
         async def send(message):
             messages.append(message)

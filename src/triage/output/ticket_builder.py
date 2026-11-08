@@ -1,5 +1,6 @@
 """Construye salida final Pydantic según ticket_salida.schema.json."""
 from uuid import uuid4
+from src.triage.ingestion.entities import extract_entities
 
 from src.triage.models import (
     RawAlert, Analysis, VerdictDecision, SeverityDecision, Escalation,
@@ -66,6 +67,19 @@ class TicketBuilder:
                 services = affected.setdefault("business_services", [])
                 if name not in services:
                     services.append(name)
+
+        original_users = affected.get("users", [])
+        if any(isinstance(value, str) and value.startswith("(") for value in original_users):
+            originals = set(alert.get("related_events") or [])
+            origins = set(extract_entities(alert).ips)
+            users = []
+            for event in evidence:
+                if event.event_id in originals or (event.source == "idp_signins" and event.raw.get("src_ip") in origins):
+                    user = event.raw.get("user_upn") or event.raw.get("username")
+                    if isinstance(user, str) and user and user not in users:
+                        users.append(user)
+            if users:
+                affected["users"] = users
 
         ticket_evidence = self._build_evidence(analysis.findings, evidence)
         resolved_ids = {item.event_id for item in ticket_evidence}

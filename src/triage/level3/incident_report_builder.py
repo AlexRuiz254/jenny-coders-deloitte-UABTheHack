@@ -260,6 +260,11 @@ def normalize_scope(value: Any, incident_id: str) -> ScopeResult:
     if value is None:
         return ScopeResult(incident_id=incident_id, limitations=["No se ha aportado análisis de alcance."])
     data = _payload(value)
+    if data.get("supported_scope") is not None:
+        result = ScopeResult.model_validate(data["supported_scope"])
+        if result.incident_id != incident_id:
+            raise ValueError("El alcance con evidencias pertenece a otro incidente")
+        return result
     if "affected_assets" not in data and "confirmed_findings" not in data:
         result = ScopeResult.model_validate(data)
         if result.incident_id != incident_id:
@@ -410,6 +415,7 @@ class IncidentReportBuilder:
         for row in reconstruction.undated_events:
             check_references([EvidenceReference.model_validate(ref) for ref in row.get("evidence", [])], required=True)
         timeline = []
+        seen_events = set()
         for item in reconstruction.timeline:
             check_references(item.evidence, required=True)
             if item.event_id and item.event_id not in {ref.event_id for ref in item.evidence}:
@@ -428,6 +434,10 @@ class IncidentReportBuilder:
             if instant not in dates:
                 raise ValueError("La fecha de la cronología no coincide con ninguna evidencia citada")
             normalized = item.model_copy(update={"timestamp": api_time(instant)})
+            identity = (normalized.timestamp, item.event_id, tuple(sorted((ref.source, ref.event_id) for ref in item.evidence)))
+            if identity in seen_events:
+                continue
+            seen_events.add(identity)
             timeline.append(normalized)
         timeline.sort(key=lambda item: (parse_utc(item.timestamp), item.event_id or "", item.description))
         reconstruction.timeline = timeline

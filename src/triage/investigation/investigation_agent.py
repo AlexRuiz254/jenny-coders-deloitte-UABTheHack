@@ -528,7 +528,7 @@ class InvestigationAgent:
             "persistence": r"\b(?:persistencia|persistence|regla de buzon no autorizada)\b",
             "personal_data_exposure": r"\b(?:fuga (?:de datos|confirmada)|exfiltracion|exposicion de datos personales|data (?:leak|exfiltration))\b",
             "financial_fraud": r"\b(?:fraude (?:confirmado|consumado)|fraud confirmed)\b",
-            "authorized_activity": r"\b(?:actividad autorizada|ejecucion autorizada|authorized activity)\b",
+            "authorized_activity": r"\b(?:actividad autorizada|actividad normal|ejecucion autorizada|authorized activity|(?:runner|pipeline|cambio|origen)(?: ci)? autorizado)\b",
         }
         claims = set()
         for clause in re.split(r"[;\n]|(?<=[.!?])\s+|\b(?:pero|but)\b", text):
@@ -689,9 +689,33 @@ class InvestigationAgent:
             scoped = re.search(r"\b(?:consulta|fuente|ventana|query|source|window)\b", folded)
             if not queries or not scoped or any(ev.raw.get("truncated") is not False for ev in queries):
                 issues.append("ausencia no demostrada: limitar la conclusión a consultas completas, filtros y ventanas")
-        if re.search(r"\b(?:sin (?:servir respuesta|llegar|alcanzar)|no (?:llego|alcanzo|se envio)).*\bbackend\b", folded):
+        if re.search(r"\b(?:sin (?:servir respuesta|salida exitosa|llegar|alcanzar)|no (?:llego|alcanzo|se envio)).*\bbackend\b", folded):
             if not any(ev.source not in {"waf", "changes"} and ev.event_id for ev in cited):
                 issues.append("El evento WAF acredita bloqueo; no registra la respuesta ni la actividad del backend")
+        if re.search(r"\bcoordinad[oa]s?\b", folded) and "attack_chain" not in support:
+            issues.append("La coincidencia de orígenes o firmas no demuestra coordinación de un ataque")
+        for number in re.findall(r"\b(\d+)\s+(?:origenes|ips? (?:distintas|diferentes))\b", folded):
+            origins = {ev.raw.get("src_ip") for ev in cited if ev.event_id and ev.raw.get("src_ip")}
+            if int(number) != len(origins):
+                issues.append("El número de orígenes no coincide con los eventos citados")
+        # Cada fuente conserva su propio intervalo; CI/CD no alarga CloudTrail.
+        source_names = {"cloudtrail": "cloudtrail", "ci/cd": "cicd_builds", "cicd": "cicd_builds"}
+        for clause in re.split(r"[;\n]|(?<=[.!?])\s+", folded):
+            sources = {source for label, source in source_names.items() if label in clause}
+            times = re.findall(r"\b(\d{2}:\d{2})(?::\d{2})?\b", clause)
+            if len(sources) != 1 or not times:
+                continue
+            source = next(iter(sources))
+            instants = []
+            for event in evidence:
+                if event.source == source and event.event_id:
+                    try:
+                        instants.append(parse_utc(event.timestamp or event.raw.get("timestamp") or event.raw.get("eventTime")))
+                    except (TypeError, ValueError, AttributeError):
+                        continue
+            if (instants and not re.search(r"consulta|ventana|query|window", clause)
+                    and any(t not in {instant.strftime("%H:%M") for instant in instants} for t in times)):
+                issues.append(f"El intervalo narrado de {source} excede los timestamps de esa fuente")
         if re.search(r"\b(?:alertas?|alerts?)\s+(?:relacionad\w*|related)\b|\brelated_alerts\b", folded):
             issues.append("El contexto de alertas candidatas no es un hallazgo acreditado por una consulta de logs")
         if re.search(r"\bno (?:esta|figura|se encuentra).*\b(?:incluid|entre|objetivo)", folded):

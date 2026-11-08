@@ -153,6 +153,7 @@ class ScopeAnalysis(BaseModel):
     # Metadatos granulares opcionales para mayor fidelidad
     asset_details: list[AffectedAsset] = Field(default_factory=list)
     user_details: list[AffectedUser] = Field(default_factory=list)
+    supported_scope: dict[str, Any] | None = None
 
 
 class InvestigationBundle(BaseModel):
@@ -332,7 +333,7 @@ class ScopeAnalyzer:
         # 8. Identificar incertidumbres o información desconocida
         unknowns = self._identify_unknowns(bundle, affected_assets_details, affected_users_details, data_summary)
 
-        return ScopeAnalysis(
+        result = ScopeAnalysis(
             affected_assets=affected_assets,
             affected_users=affected_users,
             affected_services=affected_services,
@@ -346,6 +347,10 @@ class ScopeAnalyzer:
             asset_details=affected_assets_details,
             user_details=affected_users_details,
         )
+        if isinstance(bundle, dict) and bundle.get("incident_id"):
+            from src.triage.level3.scope_evidence import supported_scope
+            result.supported_scope = supported_scope(bundle, self.references)
+        return result
 
     def _empty_scope(self, reason: str) -> ScopeAnalysis:
         """Devolver un ScopeAnalysis seguro para bundles vacíos o sin evidencias."""

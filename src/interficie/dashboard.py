@@ -1,8 +1,9 @@
-"""Panel SOC N1: presentación del orquestador y de los resultados persistidos."""
+"""Aplicación SOC N1–N4: investigación, correlación, respuesta y revisión humana."""
 import atexit
 import json
 import logging
 import os
+import re
 from pathlib import Path
 import socket
 import subprocess
@@ -303,7 +304,13 @@ def render_ticket(ticket: Ticket, details=None, trace=None) -> None:
     c2.metric("Confianza", f"{ticket.confidence:.0%}")
     c3.metric("Severidad final", ticket.severity)
     c4.metric("Escalado recomendado", "Sí" if ticket.escalation.escalate else "No")
-    st.write(ticket.summary)
+    sentences = re.split(r"(?<=[.!?])\s+", ticket.summary)
+    if len(ticket.summary) > 1800 and len(sentences) > 5:
+        st.write(" ".join(sentences[:5]))
+        with st.expander("Resumen y justificación completos"):
+            st.write(ticket.summary)
+    else:
+        st.write(ticket.summary)
     st.markdown("**Decisiones y motivos**")
     st.write(ticket.severity_rationale or "Sin justificación de severidad registrada.")
     if details.get("verdict"):
@@ -344,7 +351,7 @@ def render_ticket(ticket: Ticket, details=None, trace=None) -> None:
         st.caption("No se registraron preguntas pendientes.")
     st.markdown("**Respuesta recomendada**")
     st.dataframe([a.model_dump(exclude_none=True) for a in ticket.recommended_actions], hide_index=True, width="stretch")
-    st.caption("El nivel 1 registra recomendaciones y decisiones humanas. Ninguna acción de contención se ejecuta desde este panel.")
+    st.caption("Estas son recomendaciones. La ejecución requiere preparar el plan y completar las aprobaciones en Respuesta · N4.")
     with st.expander("Trazabilidad: etapas y consultas"):
         if trace:
             safe_trace = [
@@ -446,9 +453,12 @@ def render_import(api, store) -> None:
 
 
 def render_dashboard(api, service, store) -> None:
-    st.title("Tarvia · Centro de triaje SOC")
-    st.caption("Nivel 1 asistido por IA · Evidencias verificables · Decisión humana")
-    view = st.sidebar.radio("Navegación", ["Alertas pendientes", "Tickets e investigación", "Importar"], key="navigation")
+    st.title("Tarvia · Centro de operaciones SOC")
+    st.caption("N1 Triaje con IA → N2 Incidentes → N3 Investigación → N4 Respuesta · Evidencias y decisión humana")
+    view = st.sidebar.radio("Navegación", ["Alertas pendientes", "Tickets e investigación", "Incidentes · N2",
+                                          "Investigación · N3", "Respuesta · N4", "Importar", "Configuración"], key="navigation")
+    if os.getenv("SOC_DEMO_MODE", "false").casefold() in {"true", "1", "yes"}:
+        st.sidebar.warning("DEMOSTRACIÓN · API simulada e identidades de ensayo")
     if st.sidebar.button("Actualizar catálogo de alertas"):
         load_alert_index.clear()
         st.rerun()
@@ -500,13 +510,19 @@ def render_dashboard(api, service, store) -> None:
         render_queue(api, store, index, service)
     elif view == "Tickets e investigación":
         render_processed(store, api, service)
-    else:
+    elif view == "Importar":
         render_import(api, store)
+    else:
+        from src.interficie.workflow_views import (product_services, render_level2, render_level3,
+                                                   render_level4, render_configuration)
+        product = product_services(api, store)
+        {"Incidentes · N2": render_level2, "Investigación · N3": render_level3,
+         "Respuesta · N4": render_level4, "Configuración": render_configuration}[view](product)
 
 
 def main() -> None:
     load_dotenv(PROJECT_ROOT / ".env")
-    st.set_page_config(page_title="Tarvia SOC · Triaje N1", page_icon="🛡️", layout="wide")
+    st.set_page_config(page_title="Tarvia SOC · N1–N4", page_icon="🛡️", layout="wide")
     log_path = PROJECT_ROOT / "logs"
     log_path.mkdir(exist_ok=True)
     logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler(log_path / "soc.log", encoding="utf-8")])

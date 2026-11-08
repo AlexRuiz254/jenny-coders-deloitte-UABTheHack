@@ -129,3 +129,39 @@ def test_manual_review_preserves_multiple_known_resources():
         severity=SeverityDecision(severity="high", rationale="Provisional"), alert=cloud_alert)
     assert len(actions) == 1 and actions[0].action == "verify_cloud_change"
     assert "personal_data_exposure" not in InvestigationAgent._asserted_claims("La exposición de datos personales queda sin demostrar.")
+
+
+def test_saved_identity_regression_does_not_disable_account_and_resolves_aggregate_users():
+    import json
+    from pathlib import Path
+    from src.triage.models import Analysis, ContextSnapshot, Evidence, Escalation
+    from src.triage.output.ticket_builder import TicketBuilder
+    root = Path(__file__).resolve().parents[1]
+    record = json.loads((root / "reports/soc_validation_20261108/iteration_3/ALR-20261005-000272.record.json").read_text(encoding="utf-8"))
+    data = record["details"]
+    proposed = Analysis.model_validate(data["analysis"])
+    context = ContextSnapshot.model_validate(data["context"])
+    evidence = [Evidence.model_validate(item) for item in data["evidence"]]
+    verdict = VerdictDecision.model_validate(data["verdict"])
+    severity = SeverityDecision(severity=data["ticket"]["severity"], rationale="Matriz del resultado guardado")
+    actions = ActionRecommender().recommend(proposed, context, verdict=verdict, severity=severity,
+                                           alert=data["alert"], evidence=evidence)
+    assert not any(item.action == "disable_user" for item in actions)
+    ticket = TicketBuilder().build(alert=data["alert"], related_alerts=[], context=context, analysis=proposed,
+        verdict=verdict, severity=severity, escalation=Escalation(escalate=True), actions=actions,
+        evidence=evidence, intel=[], triage_seconds=0)
+    assert len(ticket.affected["users"]) == 12
+    assert all("@tarvia.example" in name for name in ticket.affected["users"])
+
+
+def test_waf_cloud_presentation_claims_require_source_specific_support():
+    alert, ev = waf_case()
+    for text in ("Sin salida exitosa al backend.", "Escaneo coordinado desde 22 orígenes."):
+        assert InvestigationAgent._claim_issues(text, support=set(), cited=[ev], evidence=[ev])
+    cloud = event("cloudtrail", "CT-test", eventName="GetObject", errorCode="")
+    cloud.timestamp = "2026-10-06T08:54:31Z"
+    ci = event("cicd_builds", "CI-test", status="ok")
+    ci.timestamp = "2026-10-06T09:01:00Z"
+    assert InvestigationAgent._claim_issues("CloudTrail registra actividad hasta las 09:01 UTC.",
+                                           support=set(), cited=[cloud], evidence=[cloud, ci])
+    assert "authorized_activity" in InvestigationAgent._asserted_claims("Bucket público desde runner CI autorizado.")

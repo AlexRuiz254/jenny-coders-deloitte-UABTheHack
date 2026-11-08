@@ -10,6 +10,7 @@ No hay transacción global: los guardados anteriores no se deshacen al fallar.
 from __future__ import annotations
 
 from collections.abc import Callable
+from hashlib import sha256
 from typing import Any, Protocol, TYPE_CHECKING
 
 from src.triage.models import RawAlert, Ticket
@@ -142,7 +143,7 @@ class Level2Orchestrator:
             "related_alerts": details.get("related_alerts", []),
         })
 
-    def run(self, alert_ids: list[str]) -> list[Ticket]:
+    def run(self, alert_ids: list[str], *, on_event: Callable[[dict], None] | None = None) -> list[Ticket]:
         """Investigar IDs únicos, validar grupos y delegar decisión y consolidación."""
         if not isinstance(alert_ids, list):
             raise TypeError("alert_ids debe ser una lista de cadenas")
@@ -162,6 +163,8 @@ class Level2Orchestrator:
         investigations: dict[str, AlertInvestigationInput] = {}
         source_ticket_ids: set[str] = set()
         for alert_id in unique_ids:
+            if on_event:
+                on_event({"stage": "load_n1", "alert_id": alert_id})
             ticket = self._call("TriageOrchestrator.run", self.triage.run, alert_id)
             ticket = self._check_ticket(ticket, [alert_id], "TriageOrchestrator.run")
             if ticket.ticket_id in source_ticket_ids:
@@ -173,12 +176,29 @@ class Level2Orchestrator:
             investigations[alert_id] = investigation
             alerts.append(investigation.alert)
 
+        if on_event:
+            on_event({"stage": "group_incidents"})
         groups = self._call("IncidentGrouper.group", self.grouper.group, alerts, individual)
+        # Reprocesar N1 no debe recuperar silenciosamente una consolidación antigua.
+        repository = getattr(self.tickets, "repository", None)
+        if repository is not None and callable(getattr(repository, "get", None)):
+            for index, group in enumerate(groups):
+                previous = repository.get(group.incident_id)
+                sources = sorted(by_alert[key].ticket_id for key in group.alert_ids)
+                if previous and (sorted(previous["details"].get("source_ticket_ids", [])) != sources
+                                 or previous["details"].get("group_justification") != group.correlation_reason):
+                    version = sha256(("|".join(sources) + group.correlation_reason).encode()).hexdigest()[:12]
+                    groups[index] = group.model_copy(update={
+                        "incident_id": f"{group.incident_id}-v{version}",
+                        "group_id": f"{group.incident_id}-v{version}",
+                    })
         validated = self._check_groups(groups, set(unique_ids))
 
         # Validar y evaluar todos los grupos antes de pedir guardados consolidados.
         evaluated = []
         for group, ids in validated:
+            if on_event:
+                on_event({"stage": "decide_incident", "incident_id": group.incident_id})
             members = [investigations[alert_id] for alert_id in ids]
             decision = self._call(
                 "IncidentDecisionService.decide", self.decisions.decide, group,
@@ -194,6 +214,8 @@ class Level2Orchestrator:
         consolidated = []
         saved_ids: set[str] = set()
         for group, ids, members, decision in evaluated:
+            if on_event:
+                on_event({"stage": "save_incident", "incident_id": group.incident_id})
             # El servicio real acepta IncidentDecisionResult sin reconstruirlo.
             source_tickets = [by_alert[alert_id] for alert_id in ids]
             trace = [{"stage": "consolidate_incident", "incident_id": group.incident_id,

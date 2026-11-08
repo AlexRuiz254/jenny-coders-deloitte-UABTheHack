@@ -20,6 +20,8 @@ Contratos de integración N3:
 
 from __future__ import annotations
 
+from bisect import bisect_right
+
 from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta, timezone
 from ipaddress import ip_address
@@ -38,6 +40,7 @@ from src.triage.models import (
     RawAlert,
     Ticket,
 )
+from src.triage.time_windows import parse_utc
 
 
 ConclusionStatus = Literal["confirmed", "hypothesis", "undetermined"]
@@ -561,9 +564,8 @@ class AttackReconstructor:
             # registrando el truncamiento como incertidumbre.
             if (
                 ev.event_id is None
-                and "truncated" in raw_dict
-                and "q" in raw_dict
-                and len(raw_dict.keys() - {"q", "desde", "hasta", "count", "truncated"}) == 0
+                and (raw_dict.get("kind") == "query_summary"
+                     or "q" in raw_dict and "truncated" in raw_dict)
             ):
                 if raw_dict.get("truncated"):
                     notes.append(
@@ -758,8 +760,36 @@ class AttackReconstructor:
         adj: dict[int, set[int]] = {i: set() for i in range(n)}
         weak_pairs_noted: set[tuple[str, str]] = set()
 
+        # Evaluar solo pares que puedan compartir un identificador. Consultar
+        # varios días añade mucho tráfico de fondo sin interés para la cadena.
+        by_entity: dict[tuple[str, str], dict[tuple, list[int]]] = {}
+        by_reference: dict[str, set[int]] = {}
+        dimensions = ("sessions", "hashes", "urls", "users", "hosts", "ips", "domains", "customers")
+        for index, event in enumerate(timeline):
+            if event.is_suspicious:
+                for group in dimensions:
+                    for token in event.entities.get(group, []):
+                        by_entity.setdefault((group, token), {}).setdefault((event.source, event.phase), []).append(index)
+            for reference in [*event.entities.get("related_events", []), event.event_id]:
+                if reference:
+                    by_reference.setdefault(reference, set()).add(index)
+
         for i in range(n):
-            for j in range(i + 1, n):
+            event = timeline[i]
+            candidates: set[int] = set()
+            if event.is_suspicious:
+                for group in dimensions:
+                    for token in event.entities.get(group, []):
+                        for indices in by_entity.get((group, token), {}).values():
+                            position = bisect_right(indices, i)
+                            # Conservar relaciones entre fuentes/fases y conectar
+                            # las repeticiones consecutivas, sin un grafo completo
+                            # de miles de beacons idénticos. No se pierden eventos.
+                            candidates.update(indices[position:position + 2])
+            for reference in [*event.entities.get("related_events", []), event.event_id]:
+                if reference:
+                    candidates.update(by_reference.get(reference, set()))
+            for j in sorted(value for value in candidates if value > i):
                 ev_a, ev_b = timeline[i], timeline[j]
                 dt_a, dt_b = parsed_times[i], parsed_times[j]
 
@@ -812,6 +842,8 @@ class AttackReconstructor:
 
         # Determinar la componente conexa principal de eventos sospechosos
         chain_indices = self._select_primary_attack_chain(timeline, adj)
+        if n > 500:
+            notes.append("Las relaciones muestran vínculos representativos entre fuentes y fases; no enumeran todos los pares de eventos repetidos. La cronología conserva todos los eventos recuperados.")
         return relationships, chain_indices, notes
 
     def _evaluate_event_pair(
@@ -1023,10 +1055,10 @@ class AttackReconstructor:
 
         phases: list[AttackPhase] = []
         # Conservar el orden cronológico de primera aparición de cada fase (y PHASE_ORDER en empate)
-        sorted_phase_keys = sorted(
-            by_phase.keys(),
-            key=lambda p: PHASE_ORDER.index(p),
-        )
+        first_positions = {}
+        for index, event in enumerate(target_events):
+            first_positions.setdefault(event.phase, index)
+        sorted_phase_keys = sorted(by_phase, key=lambda phase: first_positions[phase])
 
         for phase_id in sorted_phase_keys:
             evs = by_phase[phase_id]
@@ -1195,11 +1227,9 @@ class AttackReconstructor:
                 first_suspicious_event_id=first_susp_id,
             )
 
-        status: ConclusionStatus = (
-            "confirmed"
-            if (has_initial_access and origin_ev.timestamp_valid and len(chain_events) >= 2)
-            else "hypothesis"
-        )
+        status: ConclusionStatus = "confirmed" if has_initial_access and self._initial_link(origin_ev, chain_events) else "hypothesis"
+        if status == "hypothesis":
+            pz_uncertainties.append("El primer evento de la cadena no demuestra por sí solo el paciente cero; falta un vínculo directo con el compromiso posterior.")
         conf = 0.88 if status == "confirmed" else 0.62
         if not origin_ev.timestamp_valid:
             conf = max(0.35, round(conf - 0.20, 2))
@@ -1285,11 +1315,7 @@ class AttackReconstructor:
 
         vector = self._infer_access_vector_label(initial_events)
         has_follow_up = any(ev.phase != "initial_access" for ev in chain_events)
-        status: ConclusionStatus = (
-            "confirmed"
-            if (has_follow_up and first_ia.timestamp_valid)
-            else "hypothesis"
-        )
+        status: ConclusionStatus = "confirmed" if any(self._initial_link(event, chain_events) for event in initial_events) else "hypothesis"
         conf = 0.88 if status == "confirmed" else 0.65
         ia_uncertainties: list[str] = []
         if not has_follow_up:
@@ -1298,6 +1324,8 @@ class AttackReconstructor:
                 "que confirmen la progresión completa de la intrusión."
             )
             ia_uncertainties.append(note)
+        if status != "confirmed":
+            ia_uncertainties.append("La proximidad temporal, compartir usuario/equipo o una fase posterior no prueba que este intento causara la intrusión.")
 
         mitre_str = f" ({', '.join(mitres)})" if mitres else ""
         conclusion_text = f"{vector}{mitre_str} evidenciado en {', '.join(refs)}."
@@ -1357,7 +1385,7 @@ class AttackReconstructor:
                 if r not in refs:
                     refs.append(r)
 
-        if has_initial and has_progression and all_dated:
+        if initial_access.status == "confirmed" and patient_zero.status == "confirmed" and has_progression and all_dated:
             category = initial_access.vector or "Compromiso en acceso inicial"
             conclusion_text = (
                 f"Causa raíz confirmada: {category} sobre "
@@ -1496,16 +1524,12 @@ class AttackReconstructor:
                     is_suspicious = True
 
         if src in ("email", "email_clicks"):
-            verdict = str(raw.get("verdict") or raw.get("phishing_verdict") or "").casefold()
+            verdict = str(raw.get("verdict") or raw.get("phishing_verdict") or raw.get("gateway_verdict") or "").casefold()
             subject = str(raw.get("subject") or "").casefold()
             if (
-                src == "email_clicks"
-                or "phish" in verdict
+                "phish" in verdict
                 or "malicious" in verdict
                 or "suspicious" in verdict
-                or "iban" in subject
-                or "urgente" in subject
-                or "factura" in subject
                 or raw.get("is_phishing") is True
                 or is_suspicious
             ):
@@ -1694,6 +1718,36 @@ class AttackReconstructor:
         if is_suspicious:
             return "execution", mitre, True
         return None, mitre, False
+
+    @staticmethod
+    def _initial_link(origin: TimelineEvent, chain_events: list[TimelineEvent]) -> bool:
+        """Confirmar progresión solo con referencia directa o artefacto exacto y víctima.
+
+        Un intento bloqueado, un clic corriente o dos fases en el mismo equipo
+        no demuestran causalidad. Se conserva la hipótesis cuando falta el nexo.
+        """
+        if not origin.timestamp_valid:
+            return False
+        blocked = {"blocked", "block", "denied", "deny", "quarantined", "prevented"}
+        origin_details = origin.raw.get("details") if isinstance(origin.raw.get("details"), dict) else {}
+        action = origin.raw.get("action") or origin_details.get("action")
+        if action in blocked:
+            return False
+        for following in chain_events:
+            if (following is origin or not following.timestamp_valid or parse_utc(following.timestamp) < parse_utc(origin.timestamp)
+                    or following.source != "edr_events"):
+                continue
+            raw = following.raw
+            details = raw.get("details") if isinstance(raw.get("details"), dict) else {}
+            if (raw.get("action") or details.get("action")) in blocked:
+                continue
+            executed = raw.get("event_type") in {"process_start", "process_access", "service_install", "registry_set"} or bool(raw.get("process_name") and (raw.get("parent_process") or raw.get("parent_name")))
+            explicit = origin.event_id in following.entities.get("related_events", []) or following.event_id in origin.entities.get("related_events", [])
+            artifact = any(set(origin.entities.get(key, [])) & set(following.entities.get(key, [])) for key in ("hashes", "urls"))
+            victim = any(set(origin.entities.get(key, [])) & set(following.entities.get(key, [])) for key in ("hosts", "users"))
+            if executed and (explicit or artifact and victim):
+                return True
+        return False
 
     @staticmethod
     def _extract_event_entities(

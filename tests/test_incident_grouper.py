@@ -72,6 +72,11 @@ def test_same_host_and_user_alone_are_insufficient():
     assert len(groups([alert("A"), alert("B")])) == 2
 
 
+def test_shared_background_evidence_does_not_merge_incidents():
+    items = [alert("A"), alert("B")]
+    assert len(groups(items, [ticket(a, events=["EDR-999"]) for a in items])) == 2
+
+
 def test_file_hash_host_and_user_form_a_relation():
     items = [alert("A", files=[{"sha256": "a" * 64}]),
              alert("B", hour=1, hashes=["a" * 64])]
@@ -178,11 +183,11 @@ def test_invalid_window(hours):
 def test_real_dataset_latrodectus_chain_has_verifiable_links():
     root = Path(__file__).resolve().parents[1] / "RepositoriDeloitte"
     ids = {"ALR-20261009-011790", "ALR-20261009-011791", "ALR-20261009-011792"}
-    items = [a for line in (root / "03_alertas/alertas.jsonl").read_text().splitlines()
+    items = [a for line in (root / "03_alertas/alertas.jsonl").read_text(encoding="utf-8").splitlines()
              if (a := json.loads(line))["alert_id"] in ids]
-    tip = {entry["value"]: entry for line in (root / "05_inteligencia/ti_feed.jsonl").read_text().splitlines()
+    tip = {entry["value"]: entry for line in (root / "05_inteligencia/ti_feed.jsonl").read_text(encoding="utf-8").splitlines()
            if (entry := json.loads(line))}
-    sandbox = {entry["sha256"]: entry for line in (root / "05_inteligencia/sandbox_informes.jsonl").read_text().splitlines()
+    sandbox = {entry["sha256"]: entry for line in (root / "05_inteligencia/sandbox_informes.jsonl").read_text(encoding="utf-8").splitlines()
                if (entry := json.loads(line))}
     tickets = [ticket(a) for a in items]  # Solo envoltura de test; no análisis IA.
     for a, t in zip(items, tickets):

@@ -57,6 +57,7 @@ class ApprovalRecord(BaseModel):
     target: str
     status: Literal["pending", "approved", "rejected"]
     human_verified: bool
+    identity_mode: Literal["authenticated", "demo_simulated"] = "authenticated"
     decision_ids: list[str]
     approved_roles: list[ApprovalRole]
     expires_at: datetime | None = None
@@ -165,6 +166,8 @@ class SQLiteResponseStore:
                     digest TEXT PRIMARY KEY, incident_id TEXT NOT NULL, payload TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS response_report_heads (
                     incident_id TEXT PRIMARY KEY, digest TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS workflow_operations (
+                    operation_id TEXT PRIMARY KEY, payload TEXT NOT NULL);
             """)
 
     def _connect(self) -> sqlite3.Connection:
@@ -195,6 +198,34 @@ class SQLiteResponseStore:
         if report.incident_id != incident_id or report_fingerprint(report) != row[0]:
             raise ValueError("El informe N3 persistido no coincide con su contenido/identificador")
         return report
+
+    def list_reports(self, *, incident_id: str = "", limit: int = 100) -> list[dict]:
+        with closing(self._connect()) as con:
+            rows = con.execute(
+                "SELECT r.incident_id,r.digest,json_extract(r.payload,'$.title'),"
+                "json_array_length(r.payload,'$.timeline'),h.digest=r.digest "
+                "FROM response_reports r LEFT JOIN response_report_heads h ON h.incident_id=r.incident_id "
+                "WHERE (?='' OR r.incident_id=?) ORDER BY r.rowid DESC LIMIT ?",
+                (incident_id, incident_id, limit)).fetchall()
+        return [dict(zip(("incident_id", "digest", "title", "events", "current"), row)) for row in rows]
+
+    def list_states(self, *, incident_id: str = "", limit: int = 200) -> list[ProposalState]:
+        with closing(self._connect()) as con:
+            rows = con.execute("SELECT payload FROM response_states WHERE "
+                               "(?='' OR json_extract(payload,'$.proposal.incident_id')=?) ORDER BY rowid DESC LIMIT ?",
+                               (incident_id, incident_id, limit)).fetchall()
+        return [ProposalState.model_validate_json(row[0]) for row in rows]
+
+    def save_operation(self, operation: dict) -> None:
+        with closing(self._connect()) as con, con:
+            con.execute("INSERT INTO workflow_operations VALUES (?,?) ON CONFLICT(operation_id) "
+                        "DO UPDATE SET payload=excluded.payload",
+                        (operation["operation_id"], json.dumps(operation, ensure_ascii=False)))
+
+    def list_operations(self, *, limit: int = 20) -> list[dict]:
+        with closing(self._connect()) as con:
+            rows = con.execute("SELECT payload FROM workflow_operations ORDER BY rowid DESC LIMIT ?", (limit,)).fetchall()
+        return [json.loads(row[0]) for row in rows]
 
     def get(self, proposal_id: str) -> ProposalState | None:
         with closing(self._connect()) as con:
@@ -228,10 +259,16 @@ class SQLiteResponseStore:
                     or previous.proposal != state.proposal):
                 raise RuntimeError("Conflicto de versión o modificación de una propuesta registrada")
             transitions = {"pending": {"pending", "approved", "rejected"},
-                           "approved": {"approved", "rejected"}, "executing": {"failed", "succeeded"},
+                           "approved": {"pending", "approved", "rejected"}, "executing": {"failed", "succeeded"},
                            "rejected": {"rejected"}, "failed": {"failed"}, "succeeded": {"succeeded"}}
             if state.status not in transitions[previous.status]:
                 raise PermissionError("Transición de estado no permitida; requiere conciliación manual")
+            if previous.status == "approved" and state.status == "pending" and (
+                    state.approval is None or state.approval.status != "pending"
+                    or state.approval.decision_ids or previous.approval is None
+                    or previous.approval.approval_id == state.approval.approval_id
+                    or not state.history or state.history[-1].get("event") != "approval_restarted"):
+                raise PermissionError("Renovar requiere una nueva solicitud sin votos ni autorizaciones heredadas")
             con.execute("UPDATE response_states SET version=?,status=?,payload=? WHERE proposal_id=?",
                         (state.version, state.status, state.model_dump_json(), state.proposal.proposal_id))
 
@@ -411,11 +448,13 @@ class NativeApprovalAdapter:
     heurísticos por subcadena de ApprovalPolicy.resolve_role().
     """
     def __init__(self, service: Any, store: ResponseStore,
-                 verify_actor: Callable[[HumanDecision, ContainmentProposal], bool], requester_id: str = "soc_n4_planner") -> None:
+                 verify_actor: Callable[[HumanDecision, ContainmentProposal], bool], requester_id: str = "soc_n4_planner",
+                 identity_mode: Literal["authenticated", "demo_simulated"] = "authenticated") -> None:
         if not callable(verify_actor):
             raise TypeError("Se requiere un verificador de identidad de la sesión humana")
         self.service, self.store = service, store
         self.verify_actor, self.requester_id = verify_actor, requester_id
+        self.identity_mode = identity_mode
         self._lock = threading.RLock()
 
     def _binding(self, proposal: ContainmentProposal, approval: Any) -> None:
@@ -456,6 +495,7 @@ class NativeApprovalAdapter:
             action=proposal.action, target=proposal.target,
             status="rejected" if approval.status in {"rejected", "revoked", "expired"} else approval.status,
             human_verified=verified, decision_ids=ids, approved_roles=sorted(roles),
+            identity_mode=self.identity_mode,
             expires_at=self.service.token_service.expiry(approval.approval_token) if approval.status == "approved" else None,
         )
 
@@ -525,6 +565,25 @@ class NativeApprovalAdapter:
         return ExecutionAuthorization(**receipt.model_dump(), token=SecretStr(approval.approval_token),
                                       content_digest=approval.proposal_hash)
 
+    def restart(self, proposal: ContainmentProposal, decision: HumanDecision) -> ApprovalRecord:
+        """Descartar una autorización caducada o de una sesión anterior; volver a votar."""
+        with self._lock:
+            if self.verify_actor(decision, proposal) is not True:
+                raise PermissionError("La identidad del revisor no ha sido verificada")
+            state = self.store.get(proposal.proposal_id)
+            if state is None or state.status not in {"pending", "approved"} or state.approval is None:
+                raise PermissionError("No se pueden reabrir propuestas rechazadas, reservadas o ejecutadas")
+            approval = self.service.get_approval(state.approval.approval_id)
+            self._binding(proposal, approval)
+            role = self.service.policy.user_roles.get(decision.actor.casefold())
+            if role is None or not self.service.policy.is_reviewer_authorized(
+                    decision.actor, role, proposal.action, proposal.target, approval.required_approvers):
+                raise PermissionError("El rol no permite renovar esta solicitud")
+            self.service.revoke(approval.approval_id, decision.actor, decision.reason)
+            self.service.policy.register(proposal)
+            fresh = self.service.request_approval(proposal, requester_id=self.requester_id)
+            return self._record(proposal, fresh, [], False)
+
     def consume(self, authorization: ExecutionAuthorization) -> None:
         if not self.service.token_service.consume_token(authorization.approval_token):
             raise RuntimeError("La acción se ejecutó, pero no se pudo consumir su token; conciliar manualmente")
@@ -534,7 +593,8 @@ class Level4Orchestrator:
     @classmethod
     def with_soc_services(cls, *, planner: Planner, store: SQLiteResponseStore, approval_service: Any,
                           api_client: Any, verify_actor: Callable[[HumanDecision, ContainmentProposal], bool],
-                          requester_id: str = "soc_n4_planner") -> Level4Orchestrator:
+                          requester_id: str = "soc_n4_planner",
+                          identity_mode: Literal["authenticated", "demo_simulated"] = "authenticated") -> Level4Orchestrator:
         """Cablear los servicios existentes, sin reemplazar validaciones ni ejecutar N3."""
         from src.triage.level4.containment_executor import ContainmentExecutor as SOCExecutor
         if not isinstance(approval_service.token_service, SOCTokenBridge):
@@ -544,7 +604,7 @@ class Level4Orchestrator:
             raise ValueError("No se pueden trasladar autorizaciones a otra API SOC")
         if not isinstance(approval_service.policy, _ProposalPolicyBridge):
             approval_service.policy = _ProposalPolicyBridge(approval_service.policy)
-        adapter = NativeApprovalAdapter(approval_service, store, verify_actor, requester_id)
+        adapter = NativeApprovalAdapter(approval_service, store, verify_actor, requester_id, identity_mode)
         return cls(report_loader=store.load_report, planner=planner, approvals=adapter,
                    executor=SOCExecutor(api_client), store=store)
 
@@ -801,6 +861,16 @@ class Level4Orchestrator:
                 raise
         self._save(state, self._event("execution_succeeded"), status="succeeded", result=result, last_error=None)
         return result.model_copy(deep=True)
+
+    def restart_approval(self, proposal_id: str, decision: HumanDecision) -> ProposalState:
+        state = self.get_state(proposal_id)
+        if not isinstance(self.approvals, NativeApprovalAdapter):
+            raise RuntimeError("La renovación requiere los servicios SOC de aprobación")
+        if not decision.actor.strip() or not decision.reason.strip():
+            raise ValueError("La renovación requiere revisor y motivo explícitos")
+        receipt = self.approvals.restart(state.proposal, decision)
+        return self._save(state, self._event("approval_restarted", actor=decision.actor, reason=decision.reason),
+                          approval=receipt, status="pending", last_error=None)
 
 
 def _main() -> None:

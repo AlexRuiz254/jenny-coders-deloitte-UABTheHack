@@ -237,6 +237,7 @@ def test_scenario_2_authorized_maintenance_activity() -> None:
         "fin": "2026-10-14T05:00:00Z",
         "detalle": "Ventana de escaneo semanal autorizado desde NESSUS01 (01:00-06:00).",
         "activos": ["NESSUS01"],
+        "alcance": "NESSUS01",
     }
     context = ContextSnapshot(
         assets=[
@@ -255,7 +256,7 @@ def test_scenario_2_authorized_maintenance_activity() -> None:
             source="firewall",
             event_id="EVT-FW-101",
             timestamp="2026-10-14T02:10:00Z",
-            raw={"summary": "Escaneo de puertos desde NESSUS01 dentro de ventana CHG-2026-044."},
+            raw={"hostname": "NESSUS01", "summary": "Escaneo de puertos desde NESSUS01 dentro de ventana CHG-2026-044."},
         )
     ]
     ev_2 = [
@@ -263,7 +264,7 @@ def test_scenario_2_authorized_maintenance_activity() -> None:
             source="firewall",
             event_id="EVT-FW-102",
             timestamp="2026-10-14T02:25:00Z",
-            raw={"summary": "Sondeo de servicios desde NESSUS01 dentro de ventana CHG-2026-044."},
+            raw={"hostname": "NESSUS01", "summary": "Sondeo de servicios desde NESSUS01 dentro de ventana CHG-2026-044."},
         )
     ]
 

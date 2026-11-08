@@ -1,0 +1,15 @@
+........................................................................ [ 16%]
+........................................................................ [ 33%]
+........................................................................ [ 49%]
+........................................................................ [ 66%]
+........................................................................ [ 82%]
+........................................................................ [ 99%]
+..                                                                       [100%]
+============================== warnings summary ===============================
+tests/test_product_workflow.py::test_saved_n1_to_n3_and_authorized_response_survive_reload
+tests/test_product_workflow.py::test_restart_requires_fresh_approval_and_preserves_decisions
+  D:\Documents\Hackathon 26\jenny-coders-deloitte-UABTheHack\RepositoriDeloitte\06_herramientas\mock_soc_api.py:113: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    rec = {"timestamp": dt.datetime.utcnow().isoformat() + "Z", "action": action, **a.model_dump(), "result": "ok (simulado)"}
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+434 passed, 2 warnings in 95.05s (0:01:35)

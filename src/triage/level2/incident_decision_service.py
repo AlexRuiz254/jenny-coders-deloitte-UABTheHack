@@ -619,9 +619,10 @@ class IncidentDecisionService:
                 item.analysis,
                 item.evidence,
                 item.context,
+                alert=item.alert,
             )
             # Si además se verifican restricciones de alcance/activo/origen en N2 para BTP:
-            if validated.verdict == "benign_true_positive":
+            if item.analysis.verdict == "benign_true_positive":
                 scope_ok, scope_problem = self._verify_n2_authorization_scope(
                     item.alert,
                     item.analysis,
@@ -725,6 +726,9 @@ class IncidentDecisionService:
                     f"Las alertas {', '.join(nmi_ids)} requieren información adicional "
                     "para completar el alcance secundario."
                 )
+                for aid in nmi_ids:
+                    parts.append(f"[{aid}] Actividad declarada autorizada o pendiente de verificación: "
+                                 f"{per_alert_verdicts[aid].rationale}")
             for aid in tp_ids:
                 parts.append(f"[{aid}] {per_alert_verdicts[aid].rationale}")
             for aid in btp_ids:
@@ -1594,7 +1598,8 @@ class IncidentDecisionService:
                             key_ids.append(clean_ref)
             if isinstance(item.ticket, Ticket):
                 for tev in item.ticket.evidence:
-                    clean_ref = tev.event_id.strip()
+                    # Los resúmenes de consultas no son eventos y no llevan event_id.
+                    clean_ref = (tev.event_id or "").strip()
                     if clean_ref and clean_ref not in key_ids:
                         key_ids.append(clean_ref)
 

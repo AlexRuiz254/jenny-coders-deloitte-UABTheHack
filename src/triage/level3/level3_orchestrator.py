@@ -144,11 +144,16 @@ class Level3Orchestrator:
         ]
         return data
 
-    def run(self, incident_id: str) -> IncidentReport:
+    def run(self, incident_id: str, *, on_event: Callable[[dict], None] | None = None) -> IncidentReport:
         """Cargar, ampliar, reconstruir, evaluar alcance, construir y validar."""
         if not isinstance(incident_id, str) or not incident_id.strip():
             raise ValueError("incident_id debe ser una cadena no vacía")
+        def progress(stage: str) -> None:
+            if on_event:
+                on_event({"stage": stage, "incident_id": incident_id})
+        progress("load_incident")
         incident, investigations = self._load(incident_id)
+        progress("expand_investigation")
         value = self._call("InvestigationExpander.expand", self.expander.expand,
                            incident.model_copy(deep=True), [item.model_copy(deep=True) for item in investigations])
         bundle = InvestigationBundle.model_validate(value).model_copy(deep=True)
@@ -158,6 +163,7 @@ class Level3Orchestrator:
                 or {item.ticket_id for item in bundle.source_tickets} != source_ids):
             raise ValueError("InvestigationExpander devolvió otro incidente o perdió sus tickets N1")
         # Copias independientes: un componente no altera la entrada del siguiente.
+        progress("reconstruct_attack")
         reconstruction = self._call("AttackReconstructor.reconstruct", self.reconstructor.reconstruct,
                                     self._service_bundle(bundle))
         reconstruction = ReconstructionResult.model_validate(
@@ -166,14 +172,17 @@ class Level3Orchestrator:
         )
         if reconstruction.incident_id != incident_id:
             raise ValueError("AttackReconstructor devolvió otro incidente")
+        progress("assess_scope")
         scope = self._call("ScopeAnalyzer.assess", self.scope_analyzer.assess, self._service_bundle(bundle))
         if scope is None:
             raise TypeError("ScopeAnalyzer.assess no devolvió un análisis de alcance")
         scope = normalize_scope(scope, incident_id)
+        progress("build_report")
         report = self._call("IncidentReportBuilder.build", self.report_builder.build,
                             incident.model_copy(deep=True), bundle.model_copy(deep=True), reconstruction, scope)
         report = validate_report(report)
         if (report.incident_id != incident_id or set(report.alert_ids) != set(incident.alert_ids)
                 or set(report.source_ticket_ids) != source_ids):
             raise ValueError("El informe final contiene otro incidente o tickets ajenos")
+        progress("report_validated")
         return report

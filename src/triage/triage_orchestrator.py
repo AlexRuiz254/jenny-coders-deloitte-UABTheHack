@@ -223,7 +223,7 @@ class TriageOrchestrator:
         actions = call(
             "recommend_actions", self.actions.recommend,
             analysis=analysis, context=context, verdict=verdict, severity=severity,
-            alert=alert, evidence=evidence
+            alert=alert, evidence=evidence, intel=intel
         )
 
         # El constructor produce el ticket; el repositorio lo persiste.

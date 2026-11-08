@@ -61,6 +61,7 @@ class IncidentGrouper:
             if (isinstance(event_id, str) and re.fullmatch(r"[A-Z]+-\d+", event_id)
                     and event_id.split("-", 1)[0] in EvidenceCollector.SOURCES):
                 events.add(event_id)
+        seed_events = set(events)
         for evidence in ticket.evidence:
             if evidence.source in EvidenceCollector.SOURCES.values() and evidence.event_id:
                 events.add(evidence.event_id)
@@ -86,6 +87,7 @@ class IncidentGrouper:
             instant = None
         return {
             "time": instant, "events": events,
+            "seed_events": seed_events,
             "bindings": IncidentGrouper._bindings(alert.get("entities", {}))
             | IncidentGrouper._bindings(alert.get("evidence", {})),
             "hosts": set(keys.hosts), "users": set(keys.users),
@@ -100,8 +102,9 @@ class IncidentGrouper:
         shared = {key: sorted(left[key] & right[key]) for key in (
             "events", "bindings", "hosts", "users", "customers", "hashes", "network",
         )}
-        if shared["events"]:
-            return .98, "Mismo evento de log", {"event_ids": shared["events"]}
+        anchored = sorted(set(shared["events"]) & (left["seed_events"] | right["seed_events"]))
+        if anchored:
+            return .98, "Mismo evento vinculado a una alerta original", {"event_ids": anchored}
         if shared["bindings"]:
             return .95, "Mismo mensaje o sesión explícita", {"bindings": shared["bindings"]}
         victim = shared["hosts"] or shared["users"] or shared["customers"]
