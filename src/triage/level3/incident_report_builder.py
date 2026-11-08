@@ -6,11 +6,10 @@ después se verifican contra el bundle. ScopeAnalysis real se conserva como alca
 no verificado: su interfaz actual no proporciona citas. No se inventan para
 confirmar o proponer hipótesis. ScopeResult mantiene el contrato con citas.
 
-La adaptación directa del builder conoce el ID del incidente. Level3Orchestrator
-valida ScopeResult antes de llamar al builder: ScopeAnalysis todavía necesita
-incident_id y citas/adaptación en esa frontera. Además, los consumidores de bundles
-deben acordar contexts (dict/list), EntityKeys y eventos Evidence frente a dicts.
-No se modifica ni parchea ninguno de esos módulos desde este archivo.
+normalize_scope comparte con el orquestador la asociación al ID conocido de la
+ejecución y la conservación de los datos de alcance sin citas como no verificados.
+Las conversiones de entrada de los servicios se realizan en el orquestador.
+No se modifica ni parchea ninguno de los módulos de los compañeros.
 
 Cada conclusión confirmada o hipotética debe citar source + event_id del bundle.
 La existencia de una cita permite trazabilidad; no demuestra que su interpretación
@@ -251,12 +250,21 @@ def _adapt_reconstruction(value: Any) -> Any:
     return result
 
 
-def _scope_input(value: Any, incident_id: str) -> ScopeResult:
+def normalize_scope(value: Any, incident_id: str) -> ScopeResult:
+    """Asociar la respuesta a su ejecución, sin inventar evidencia de sus hallazgos.
+
+    ScopeAnalysis carece de ID y de citas: se conserva íntegro en unverified_scope.
+    Un ScopeResult con citas mantiene sus datos y debe identificar este incidente.
+    La validación de esas citas contra el bundle sigue siendo tarea del builder.
+    """
     if value is None:
         return ScopeResult(incident_id=incident_id, limitations=["No se ha aportado análisis de alcance."])
     data = _payload(value)
     if "affected_assets" not in data and "confirmed_findings" not in data:
-        return ScopeResult.model_validate(data)
+        result = ScopeResult.model_validate(data)
+        if result.incident_id != incident_id:
+            raise ValueError("ScopeResult pertenece a otro incidente")
+        return result
     if data.get("incident_id", incident_id) != incident_id:
         raise ValueError("ScopeAnalysis pertenece a otro incidente")
     # ScopeAnalysis no incluye ni incident_id ni referencias. Asociarlo aquí al
@@ -363,7 +371,7 @@ class IncidentReportBuilder:
         reconstruction = ReconstructionResult.model_validate(reconstruction_data)
         if set(reconstruction.native_details.get("alert_ids", [])) - set(incident_data["alert_ids"]):
             raise ValueError("La reconstrucción contiene alertas ajenas al incidente")
-        scope = _scope_input(scope, incident_id)
+        scope = normalize_scope(scope, incident_id)
         if (incident_id != bundle.incident_id
                 or set(incident_data["alert_ids"]) != set(bundle.alert_ids)
                 or len(bundle.alert_ids) != len(set(bundle.alert_ids))

@@ -2,9 +2,10 @@
 
 Los repositorios reales ofrecen get(ticket_id). N2 guarda source_ticket_ids;
 esas claves recuperan los artefactos N1 sin find_by_alert ni consultas a la API.
-No se importan AttackReconstructor/ScopeAnalyzer, todavía pendientes. Sus métodos
-reciben InvestigationBundle y devuelven datos compatibles con los contratos
-ReconstructionResult/ScopeResult documentados en incident_report_builder.py.
+No se importan las implementaciones de los servicios: se inyectan. Una vista
+serializada del bundle adapta sus formatos reales sin cambiar los datos N1/N2.
+La salida de ScopeAnalyzer se asocia a esta ejecución, pero se mantiene como no
+verificada mientras ese servicio no proporcione referencias a evidencias.
 Cada etapa se llama una sola vez por run; no hay caché entre ejecuciones ni
 repositorio de informes N3 existente que permita reutilizarlos con garantías.
 """
@@ -18,7 +19,7 @@ from pydantic import BaseModel
 from src.triage.level2.incident_decision_service import AlertInvestigationInput
 from src.triage.level3.investigation_expander import InvestigationBundle
 from src.triage.level3.incident_report_builder import (
-    IncidentReport, ReconstructionResult, ScopeResult, validate_report,
+    IncidentReport, ReconstructionResult, ScopeResult, normalize_scope, validate_report,
 )
 from src.triage.models import Ticket
 
@@ -32,11 +33,11 @@ class Expander(Protocol):
 
 
 class AttackReconstructor(Protocol):
-    def reconstruct(self, bundle: InvestigationBundle) -> ReconstructionResult | BaseModel | dict: ...
+    def reconstruct(self, bundle: dict[str, Any]) -> ReconstructionResult | BaseModel | dict: ...
 
 
 class ScopeAnalyzer(Protocol):
-    def assess(self, bundle: InvestigationBundle) -> ScopeResult | BaseModel | dict: ...
+    def assess(self, bundle: dict[str, Any]) -> ScopeResult | BaseModel | dict: ...
 
 
 class ReportBuilder(Protocol):
@@ -118,6 +119,31 @@ class Level3Orchestrator:
             raise ValueError("Faltan investigaciones N1 o hay varias versiones de una alerta del incidente")
         return incident.model_copy(deep=True), sorted(investigations, key=lambda item: item.alert_id)
 
+    @staticmethod
+    def _service_bundle(bundle: InvestigationBundle) -> dict[str, Any]:
+        """Vista para los dos servicios reales; solo adaptar representación.
+
+        Los alias evidence/expanded_evidence/tickets son sus campos actuales.
+        contexts_by_alert conserva la asociación perdida al convertir contexts
+        en lista. Los eventos exponen los campos del log y mantienen raw íntegro;
+        Evidence/EntityKeys originales y el bundle de entrada no se modifican.
+        Se crea una vista independiente para cada llamada.
+        """
+        data = bundle.model_dump(mode="json")
+        data["contexts_by_alert"] = data["contexts"]
+        data["contexts"] = list(data["contexts"].values())
+        data["evidence"] = data["original_evidence"]
+        data["expanded_evidence"] = data["additional_evidence"]
+        data["tickets"] = data["source_tickets"]
+        data["analyses"] = [item["analysis"] for item in data["investigations"] if item["analysis"] is not None]
+        data["intel"] = [entry for ticket in data["tickets"] for entry in ticket["enrichment"]]
+        data["events"] = [
+            {**event["raw"], **{key: event[key] for key in ("source", "event_id", "timestamp")
+                               if event[key] is not None}, "raw": event["raw"]}
+            for event in data["events"]
+        ]
+        return data
+
     def run(self, incident_id: str) -> IncidentReport:
         """Cargar, ampliar, reconstruir, evaluar alcance, construir y validar."""
         if not isinstance(incident_id, str) or not incident_id.strip():
@@ -133,19 +159,17 @@ class Level3Orchestrator:
             raise ValueError("InvestigationExpander devolvió otro incidente o perdió sus tickets N1")
         # Copias independientes: un componente no altera la entrada del siguiente.
         reconstruction = self._call("AttackReconstructor.reconstruct", self.reconstructor.reconstruct,
-                                    bundle.model_copy(deep=True))
+                                    self._service_bundle(bundle))
         reconstruction = ReconstructionResult.model_validate(
             reconstruction.model_dump(mode="json", exclude_none=True)
             if isinstance(reconstruction, BaseModel) else reconstruction
         )
         if reconstruction.incident_id != incident_id:
             raise ValueError("AttackReconstructor devolvió otro incidente")
-        scope = self._call("ScopeAnalyzer.assess", self.scope_analyzer.assess, bundle.model_copy(deep=True))
-        scope = ScopeResult.model_validate(
-            scope.model_dump(mode="json", exclude_none=True) if isinstance(scope, BaseModel) else scope
-        )
-        if scope.incident_id != incident_id:
-            raise ValueError("ScopeAnalyzer devolvió otro incidente")
+        scope = self._call("ScopeAnalyzer.assess", self.scope_analyzer.assess, self._service_bundle(bundle))
+        if scope is None:
+            raise TypeError("ScopeAnalyzer.assess no devolvió un análisis de alcance")
+        scope = normalize_scope(scope, incident_id)
         report = self._call("IncidentReportBuilder.build", self.report_builder.build,
                             incident.model_copy(deep=True), bundle.model_copy(deep=True), reconstruction, scope)
         report = validate_report(report)
