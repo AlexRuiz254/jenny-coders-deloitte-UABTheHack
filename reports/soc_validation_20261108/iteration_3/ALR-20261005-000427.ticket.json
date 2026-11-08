@@ -1,0 +1,67 @@
+{
+  "ticket_id": "TRIAGE-eca47bbb-7ea2-411b-b5e9-6341f51cd34a",
+  "alert_ids": [
+    "ALR-20261005-000427"
+  ],
+  "title": "Escaneo de endpoint LuCI bloqueado por WAF",
+  "verdict": "needs_more_info",
+  "confidence": 0.5,
+  "severity": "medium",
+  "summary": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend. La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales. Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa. Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "waf",
+      "event_id": "WAF-0001904",
+      "finding": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend."
+    },
+    {
+      "source": "waf",
+      "event_id": "WAF-0001904",
+      "finding": "Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa."
+    },
+    {
+      "source": "waf",
+      "finding": "Consulta QRY-5a6cf132fa3d0149 literal en waf: q='WAF-0001904'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales."
+    },
+    {
+      "source": "waf",
+      "finding": "Consulta QRY-72ba6ce5ea4019fd literal en waf: q='198.18.11.240'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_waf_action_blocked_or_passed_to_backend sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "review_distributed_web_scan",
+      "target": "www.tarvia.example",
+      "requires_approval": false,
+      "justification": "22 escaneos bloqueados desde múltiples IPs sobre la misma ruta indican campaña de escaneo distribuido; requiere que E-commerce/WAF revisen la exposición de esa interfaz, confirmen que no hay acceso exitoso y consideren rate limit/captcha sin bloquear el servicio legítimo. Recomendación manual sin aprobación formal de contención; no ejecutar como endpoint de la API."
+    }
+  ],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": "Veredicto validado: needs_more_info; severidad final: medium. No se cumplen criterios de escalado obligatorio según la política SOC ni se han comunicado señales específicas de compromiso. Mantener la investigación en N1."
+  },
+  "severity_rationale": "Severidad inicial: low. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: medium. Sin ajuste: analysis.signals no indica factores de subida ni bloqueo completo. Severidad final: medium.",
+  "affected": {
+    "ips": [
+      "198.18.11.240"
+    ],
+    "urls": [
+      "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+    ],
+    "business_services": [
+      "Tienda online y app"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1190"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "Existe algún pentest/cambio autorizado (context.changes) sobre la aplicación web en la ventana? Su ausencia impifica calificar la actividad como pentest autorizado.",
+    "Hubo salida exitosa al backend, creación de web shell o lectura de datos tras las peticiones bloqueadas? El WAF solo acredita el intento bloqueado, no la explotación.",
+    "Las 22 IPs son bloques de escaneo públicos coordinados o parte de una intrusión mayor con fases de acceso/exfiltración verificables (identificador de despliegue común, C2, exfiltración)?"
+  ],
+  "triage_seconds": 26.412246699997922
+}

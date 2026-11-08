@@ -1,0 +1,257 @@
+{
+  "ticket_id": "TRIAGE-e36fec3a-473a-473a-8e52-ce30bc7a311f",
+  "alert_ids": [
+    "ALR-20261005-000272"
+  ],
+  "title": "Password spraying bloqueado desde 198.18.11.130 (IR) con persistencia posterior de regla de buzón en ferran.reyes",
+  "verdict": "true_positive",
+  "confidence": 0.8,
+  "severity": "medium",
+  "summary": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure. El bloqueo se produjo antes de cualquier efecto: los 12 intentos de BAV2ROPC (autenticación legada OAuth v2) fueron rechazados por smart lockout sin verificación MFA, por lo que no hubo sesión iniciada ni acceso real en esta actividad. Se registró una persistencia no autorizada: New-InboxRule llamada 'Proveedores' que mueve correos con remitente containing jira@ a una carpeta, aplicada sobre ferran.reyes@tarvia.example desde la IP 198.18.200.10 a las 2026-10-05T10:01:40Z (EVENT-0000019). No existe cambio ni autorización vigente que cubra esta acción. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003615",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003616",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003617",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003618",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003619",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003620",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003621",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003622",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003623",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003624",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003625",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003626",
+      "finding": "Se detectó un password spraying contra 12 cuentas desde la IP 198.18.11.130 (IR, AS64695) entre las 01:20:00 y 01:23:40 UTC del 2026-10-05, con 12 fallos y 0 éxitos. Signo: SIGN-0003615 a SIGN-0003626, todos con failure, failure_reason blocked_by_smart_lockout, mfa_result not_attempted, user_agent BAV2ROPC, device_compliant false y conditional_access failure."
+    },
+    {
+      "source": "idp_audit",
+      "event_id": "AUD-0000019",
+      "finding": "Se registró una persistencia no autorizada: New-InboxRule llamada 'Proveedores' que mueve correos con remitente containing jira@ a una carpeta, aplicada sobre ferran.reyes@tarvia.example desde la IP 198.18.200.10 a las 2026-10-05T10:01:40Z (EVENT-0000019). No existe cambio ni autorización vigente que cubra esta acción."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003615",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003616",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003617",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003618",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003619",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003620",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003621",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003622",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003623",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003624",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003625",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003626",
+      "finding": "Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-43488d79e4913609 literal en idp_signins: q='SIGN-0003615'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La actividad no corresponde a un cambio, flujo ni excepción autorizada: no hay cambios vigentes en context.changes y la regla de buzón no se corresponde con ningún flujo aprobado conocido."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-64495f802566eb51 literal en idp_signins: q='SIGN-0003616'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-149f22e4f2f024e5 literal en idp_signins: q='SIGN-0003617'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-c36486d2df339640 literal en idp_signins: q='SIGN-0003618'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-883a0356ae37747c literal en idp_signins: q='SIGN-0003619'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: El bloqueo se produjo antes de cualquier efecto: los 12 intentos de BAV2ROPC (autenticación legada OAuth v2) fueron rechazados por smart lockout sin verificación MFA, por lo que no hubo sesión iniciada ni acceso real en esta actividad."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-70c45ba358bc5e55 literal en idp_signins: q='SIGN-0003620'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-a5e17691c4fdf8f1 literal en idp_signins: q='198.18.11.130'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=12; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_authentication_history_and_mfa_result sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-1622ce2f7d222865 literal en idp_audit: q='alvaro.pons'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-7fd382e40fcc76e0 literal en idp_audit: q='enric.gil'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f25c9449a169725c literal en idp_audit: q='joan.delgado'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-ac2b15bd714e9d00 literal en idp_audit: q='judith.cortes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-000688bff41d5107 literal en idp_audit: q='celia.garcia'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f4788d336ba80c28 literal en idp_audit: q='ferran.reyes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Ferran Reyes no está incluido en las 12 cuentas del spraying, por lo que la regla de buzón sobre su cuenta no está relacionada temporal ni directamente con el ataque bloqueado desde 198.18.11.130 y requiere verificación de compromiso previo."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f852d29beaf2ad6a literal en idp_audit: q='laia.pujol'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-d389cb4ac8671ac2 literal en idp_audit: q='lorena.mora'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-7b98e2fc939afa60 literal en idp_audit: q='lorena.vega'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "revoke_sessions",
+      "target": "ferran.reyes@tarvia.example",
+      "requires_approval": true,
+      "justification": "Retirar sesiones activas de la cuenta afectada por la regla de buzón no autorizada para prevenir persistencia y acceso no previsto antes del reset. Requiere aprobación N2."
+    },
+    {
+      "action": "reset_password",
+      "target": "ferran.reyes@tarvia.example",
+      "requires_approval": true,
+      "justification": "Restablecer credenciales de la cuenta sobre la que se creó una New-InboxRule desde un origen externo, por posible compromiso previo no confirmado. Requiere aprobación N2."
+    },
+    {
+      "action": "disable_user",
+      "target": "ferran.reyes@tarvia.example",
+      "requires_approval": true,
+      "justification": "Contención proporcional si se confirma acceso no autorizado; requiere verificación de compromiso antes de aplicar por ser cuenta de usuario operativa. Requiere aprobación N2. Si es una cuenta de servicio, revisar el impacto en el proceso de negocio."
+    },
+    {
+      "action": "block_ioc",
+      "target": "198.18.200.10",
+      "requires_approval": false,
+      "justification": "Bloquear el origen de la regla de buzón no autorizada contra la cuenta ferran.reyes. Permitida a N1 para un IOC concreto en proxy, correo o EDR."
+    }
+  ],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "Escalado obligatorio a N2 según la política SOC. El investigador señala: persistencia maliciosa. Severidad final: medium."
+  },
+  "severity_rationale": "Severidad inicial: high. Sin criticidad conocida de entidades afectadas: no se puede aplicar la matriz completa; se conserva la severidad inicial como base provisional. Ajuste -1 según analysis.signals por bloqueo confirmado antes de producir efecto y ausencia de actividad posterior relevante. Severidad final: medium.",
+  "affected": {
+    "ips": [
+      "198.18.11.130"
+    ],
+    "users": [
+      "(12 cuentas)"
+    ],
+    "business_services": [
+      "Identidad y directorio activo"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1110.003"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Cómo llegó la regla de buzón a crearse sobre ferran.reyes desde 198.18.200.10 si el spraying desde 198.18.11.130 fue completamente bloqueado (0 éxitos)?",
+    "¿Existe acceso exitoso previo (sign-in aprobado) sobre ferran.reyes antes de las 10:01:40Z que explique la regla de buzón?",
+    "¿Qué relación existe entre la cuenta ferran.reyes y los correos de jira@ mencionados en la condición de la regla?",
+    "¿El origen 198.18.200.10 está asociado a otra actividad maliciosa en la ventana de ±24h no detectada por esta alerta?"
+  ],
+  "triage_seconds": 49.25403019999794
+}

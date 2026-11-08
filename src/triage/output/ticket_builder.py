@@ -31,7 +31,6 @@ class TicketBuilder:
         summary = analysis.summary
         
         if verdict.verdict != analysis.verdict:
-            title = f"Alerta reevaluada: {analysis.title}"
             summary = (
                 f"Veredicto final validado: {verdict.verdict}. {verdict.rationale}\n\n"
                 f"Resumen inicial de la investigación (no definitivo): {analysis.summary}"

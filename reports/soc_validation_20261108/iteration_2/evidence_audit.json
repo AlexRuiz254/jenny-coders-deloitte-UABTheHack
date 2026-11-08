@@ -1,0 +1,26 @@
+[
+  {
+    "alert_id": "ALR-20261005-000272",
+    "ticket_id": "TRIAGE-86a61e8d-9a6c-488c-a670-4b483757f264",
+    "events_verified": 13,
+    "queries_reproduced": 16,
+    "errors": [],
+    "note": "Comprueba procedencia y resultados; la coherencia semántica se evalúa por separado."
+  },
+  {
+    "alert_id": "ALR-20261005-000427",
+    "ticket_id": "TRIAGE-32cf24fd-1793-45c7-bd27-56f05f487a09",
+    "events_verified": 1,
+    "queries_reproduced": 2,
+    "errors": [],
+    "note": "Comprueba procedencia y resultados; la coherencia semántica se evalúa por separado."
+  },
+  {
+    "alert_id": "ALR-20261005-000450",
+    "ticket_id": "TRIAGE-600307cd-1f15-4f23-9415-0d40e1a84b10",
+    "events_verified": 103,
+    "queries_reproduced": 4,
+    "errors": [],
+    "note": "Comprueba procedencia y resultados; la coherencia semántica se evalúa por separado."
+  }
+]

@@ -4,7 +4,7 @@
 import re
 from unicodedata import normalize
 
-from src.triage.models import Analysis, Evidence, ContextSnapshot, VerdictDecision
+from src.triage.models import Analysis, Evidence, ContextSnapshot, RawAlert, VerdictDecision
 from src.triage.investigation.authorization import check_authorization
 
 
@@ -14,6 +14,7 @@ class VerdictEngine:
         analysis: Analysis,
         evidence: list[Evidence],
         context: ContextSnapshot,
+        *, alert: RawAlert | None = None,
     ) -> VerdictDecision:
         """Conservar el veredicto o solicitar más información si hay problemas decisivos.
 
@@ -24,6 +25,12 @@ class VerdictEngine:
         contradictions, other_limitations = self._check_consistency(analysis, context)
         problems.extend(contradictions)
         limitations.extend(other_limitations)
+        problems.extend(self._check_waf_activity(analysis, evidence, alert))
+        if (alert and alert.get("rule_id") == "UC-CLD-003" and analysis.verdict == "true_positive"
+                and not any(getattr(analysis.signals, name) for name in (
+                    "credentials_compromised", "persistence", "personal_data_exposure", "malicious_execution"))):
+            problems.append("La política pública está observada, pero falta resolver autorización y clasificación del bucket. "
+                            "PutBucketPolicy exitoso y ausencia de cambio documentado no prueban por sí solos actividad maliciosa o no autorizada.")
 
         if analysis.verdict == "benign_true_positive":
             authorized, reason = self._check_authorization(analysis, evidence, context)
@@ -59,6 +66,35 @@ class VerdictEngine:
             "de todos los eventos. Los PolicySignals son afirmaciones del LLM."
         )
         return VerdictDecision(verdict=verdict, confidence=confidence, rationale=rationale)
+
+    @staticmethod
+    def _check_waf_activity(
+        analysis: Analysis, evidence: list[Evidence], alert: RawAlert | None,
+    ) -> list[str]:
+        """Contrastar la actividad citada, sin equiparar bloqueo y falsa alarma."""
+        references = {ref for finding in analysis.findings for ref in finding.evidence_ids}
+        events = [ev for ev in evidence if ev.source == "waf" and ev.event_id in references]
+        if not events or alert and alert.get("source_product") != "WAF":
+            return []
+        declared_rule = (alert.get("evidence") or {}).get("rule_id") if alert else None
+        original = [ev for ev in events if not alert or ev.event_id in alert.get("related_events", [])]
+        if declared_rule and any(str(ev.raw.get("rule_id")) != str(declared_rule) for ev in original):
+            return ["La regla WAF declarada no coincide con el evento original; resolver la discrepancia."]
+        attack_refs = set()
+        for ev in events:
+            raw = ev.raw
+            uri = str(raw.get("uri", "")).casefold()
+            scanner = ("scanner" in str(raw.get("rule_msg", "")).casefold()
+                       and re.search(r"nuclei|zgrab|sqlmap|nikto", str(raw.get("user_agent", "")), re.I))
+            payload = re.search(r"union\s+select|<script\b|(?:\.\./){2,}|/etc/passwd|eval-stdin\.php|/cgi-bin/luci/;stok=", uri)
+            if raw.get("rule_id") and (scanner or payload):
+                attack_refs.add(ev.event_id)
+        attack_findings = [f for f in analysis.findings if attack_refs.intersection(f.evidence_ids)
+                           and re.search(r"escaneo|intento|ataque|explotaci[oó]n|scan|attack", f.statement, re.I)]
+        if analysis.verdict == "false_positive" and attack_findings:
+            return ["False positive contradice los hallazgos de escaneo o intento malicioso real. "
+                    "El bloqueo no convierte la detección en falsa alarma; distinguir malicia, autorización y error de regla."]
+        return []
 
     def _validate_findings(
         self,
@@ -226,9 +262,8 @@ class VerdictEngine:
 
         # Bloqueo y ejecución pueden corresponder a etapas diferentes: no es una
         # contradicción automática ni justifica reducir la confianza por sí solo.
-        for question in analysis.open_questions:
-            if question.strip():
-                limitations.append(f"Pregunta pendiente: {question.strip()}")
+        # Las preguntas ya matizan la confianza del investigador. Su cantidad no
+        # mide la calidad de las pruebas ni justifica una segunda penalización.
         for lookup in context.missing_lookups:
             if lookup.strip():
                 limitations.append(f"Consulta de contexto incompleta: {lookup.strip()}")

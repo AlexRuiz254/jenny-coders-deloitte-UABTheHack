@@ -1,0 +1,2016 @@
+{
+  "id": "TRIAGE-d89a5d3c-c42e-4fd0-9757-077bf1f0d1ff",
+  "alert_id": "ALR-20261005-000272",
+  "status": "new",
+  "created_at": "2026-11-08T04:52:22.030801Z",
+  "details": {
+    "ticket": {
+      "ticket_id": "TRIAGE-d89a5d3c-c42e-4fd0-9757-077bf1f0d1ff",
+      "alert_ids": [
+        "ALR-20261005-000272"
+      ],
+      "title": "Intentos de autenticación bloqueados",
+      "verdict": "true_positive",
+      "confidence": 0.8,
+      "severity": "high",
+      "summary": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes. El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado. Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+      "evidence": [
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003615",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003616",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003617",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003618",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003619",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003620",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003621",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003622",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003623",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003624",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003625",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003626",
+          "finding": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003615",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003616",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003617",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003618",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003619",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003620",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003621",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003622",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003623",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003624",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003625",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "event_id": "SIGN-0003626",
+          "finding": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-43488d79e4913609 literal en idp_signins: q='SIGN-0003615'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-64495f802566eb51 literal en idp_signins: q='SIGN-0003616'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-149f22e4f2f024e5 literal en idp_signins: q='SIGN-0003617'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-c36486d2df339640 literal en idp_signins: q='SIGN-0003618'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-883a0356ae37747c literal en idp_signins: q='SIGN-0003619'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-70c45ba358bc5e55 literal en idp_signins: q='SIGN-0003620'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+        },
+        {
+          "source": "idp_signins",
+          "finding": "Consulta QRY-a5e17691c4fdf8f1 literal en idp_signins: q='198.18.11.130'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=12; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_authentication_history_and_mfa_result sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-1622ce2f7d222865 literal en idp_audit: q='alvaro.pons'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-7fd382e40fcc76e0 literal en idp_audit: q='enric.gil'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-f25c9449a169725c literal en idp_audit: q='joan.delgado'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-ac2b15bd714e9d00 literal en idp_audit: q='judith.cortes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-000688bff41d5107 literal en idp_audit: q='celia.garcia'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-f4788d336ba80c28 literal en idp_audit: q='ferran.reyes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-f852d29beaf2ad6a literal en idp_audit: q='laia.pujol'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-d389cb4ac8671ac2 literal en idp_audit: q='lorena.mora'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        },
+        {
+          "source": "idp_audit",
+          "finding": "Consulta QRY-7b98e2fc939afa60 literal en idp_audit: q='lorena.vega'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta."
+        }
+      ],
+      "recommended_actions": [
+        {
+          "action": "disable_user",
+          "target": "ferran.reyes@tarvia.example",
+          "requires_approval": true,
+          "justification": "Ante la creación de regla de buzón sospechosa asociada a la cuenta y su inclusión en la lista de objetivos del spraying, deshabilitar la cuenta evita uso adicional mientras se verifica qué identidad ejecutó la regla. Requiere aprobación N2. Si es una cuenta de servicio, revisar el impacto en el proceso de negocio. Revisar con prioridad por severidad high."
+        },
+        {
+          "action": "block_ioc",
+          "target": "198.18.11.130",
+          "requires_approval": false,
+          "justification": "IP de origen del password spraying (IR, AS64695, BAV2ROPC) bloqueada por smart_lockout en los 12 intentos; bloquearla impide nuevos ataques contra la identidad. Permitida a N1 para un IOC concreto en proxy, correo o EDR. Revisar con prioridad por severidad high."
+        }
+      ],
+      "escalation": {
+        "escalate": true,
+        "to": "N2",
+        "reason": "Escalado obligatorio a N2 según la política SOC. True positive de severidad high. Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+      },
+      "severity_rationale": "Severidad inicial: high. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: critical. Ajuste -1 según analysis.signals por bloqueo confirmado antes de producir efecto y ausencia de actividad posterior relevante. Severidad final: high.",
+      "affected": {
+        "ips": [
+          "198.18.11.130"
+        ],
+        "users": [
+          "(12 cuentas)"
+        ],
+        "business_services": [
+          "Identidad y directorio activo"
+        ]
+      },
+      "enrichment": [],
+      "mitre": [
+        "T1110.003"
+      ],
+      "executed_actions": [],
+      "open_questions": [
+        "¿La cuenta ferran.reyes fue comprometida efectivamente (sesión activa o cookie robada) o la regla se creó por otro vector; qué sesiones activas y consentimientos OAuth existen para la cuenta?"
+      ],
+      "triage_seconds": 45.22653379999974
+    },
+    "source": "generated",
+    "alert": {
+      "alert_id": "ALR-20261005-000272",
+      "created_at": "2026-10-05T01:27:11.000Z",
+      "source_product": "IDP",
+      "rule_id": "UC-IDP-002",
+      "rule_name": "Password spraying",
+      "severity": "high",
+      "status": "new",
+      "mitre": {
+        "tactic": "Credential Access",
+        "technique_id": "T1110.003",
+        "technique": "Password Spraying"
+      },
+      "description": "Muchos fallos de autenticación desde un origen contra muchas cuentas distintas.",
+      "entities": {
+        "ips": [
+          "198.18.11.130"
+        ],
+        "users": [
+          {
+            "upn": "(12 cuentas)"
+          }
+        ]
+      },
+      "evidence": {
+        "failed_attempts": 12,
+        "successes": 0,
+        "protocol": "legacy auth (BAV2ROPC) bloqueado por política"
+      },
+      "related_events": [
+        "SIGN-0003615",
+        "SIGN-0003616",
+        "SIGN-0003617",
+        "SIGN-0003618",
+        "SIGN-0003619",
+        "SIGN-0003620"
+      ],
+      "runbook": "RB-03"
+    },
+    "runbook_id": "RB-03",
+    "runbook_text": "# RB-03 Identidad: inicios de sesión y cuentas\n**Reglas:** UC-IDP-001 a UC-IDP-007\n\n## Comprobaciones\n1. Origen: país, ASN, si es hosting, Tor o VPN comercial (`geoip_asn.csv`, TIP).\n2. Dispositivo: ¿`device_id` conocido y conforme? ¿El user agent encaja con el usuario?\n3. MFA: método y resultado. Muchos `timeout`/`denied` seguidos de un `approved` = fatiga MFA.\n4. Contexto: viajes y bajas (`eventos_rrhh.csv`), tipo de cuenta (`usuarios.csv`: servicio, admin, VIP).\n5. Qué hizo la sesión después (`idp_audit`): reglas de buzón, consentimientos OAuth, nuevos métodos MFA, descargas.\n\n## Decisión\n- Viaje notificado o dispositivo conocido → cerrar como benign/false positive.\n- Sesión desde infraestructura del atacante, robo de cookie o persistencia (regla de buzón, OAuth, MFA nuevo) → proponer revocar sesiones, reset y retirar la persistencia; escalar.\n- Cuenta de servicio comprometida → proponer deshabilitarla avisando del impacto de negocio.\n",
+    "context": {
+      "assets": [],
+      "users": [
+        {
+          "user_id": "U1808",
+          "username": "alvaro.pons",
+          "upn": "alvaro.pons@tarvia.example",
+          "display_name": "Álvaro Pons",
+          "department": "Compras",
+          "title": "Responsable de Compras",
+          "location": "Barcelona HQ",
+          "manager_upn": "andrea.lozano2@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-BCN-1808",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1691",
+          "username": "enric.gil",
+          "upn": "enric.gil@tarvia.example",
+          "display_name": "Enric Gil",
+          "department": "Logística",
+          "title": "Coordinador de Transporte",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1691",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1620",
+          "username": "joan.delgado",
+          "upn": "joan.delgado@tarvia.example",
+          "display_name": "Joan Delgado",
+          "department": "Logística",
+          "title": "Ingeniera de Automatización",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1620",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1706",
+          "username": "judith.cortes",
+          "upn": "judith.cortes@tarvia.example",
+          "display_name": "Judith Cortés",
+          "department": "Logística",
+          "title": "Planificador de Stock",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1706",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1918",
+          "username": "marta.delgado2",
+          "upn": "marta.delgado2@tarvia.example",
+          "display_name": "Marta Delgado",
+          "department": "Atención al Cliente",
+          "title": "Supervisora de Atención",
+          "location": "Madrid Oficina",
+          "manager_upn": "miguel.prats@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-MAD-1918",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1233",
+          "username": "victor.delgado",
+          "upn": "victor.delgado@tarvia.example",
+          "display_name": "Víctor Delgado",
+          "department": "Marketing",
+          "title": "Especialista SEM",
+          "location": "Barcelona HQ",
+          "manager_upn": "ruben.castro@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-BCN-1233",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1404",
+          "username": "celia.garcia",
+          "upn": "celia.garcia@tarvia.example",
+          "display_name": "Celia García",
+          "department": "E-commerce",
+          "title": "Desarrollador Frontend",
+          "location": "Barcelona HQ",
+          "manager_upn": "sergio.puig@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-BCN-1404",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1546",
+          "username": "ferran.reyes",
+          "upn": "ferran.reyes@tarvia.example",
+          "display_name": "Ferran Reyes",
+          "department": "Tecnología",
+          "title": "Técnico de Soporte",
+          "location": "Barcelona HQ",
+          "manager_upn": "neus.puig@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-BCN-1546",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1751",
+          "username": "laia.pujol",
+          "upn": "laia.pujol@tarvia.example",
+          "display_name": "Laia Pujol",
+          "department": "Logística",
+          "title": "Técnico de Almacén",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1751",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1671",
+          "username": "lorena.mora",
+          "upn": "lorena.mora@tarvia.example",
+          "display_name": "Lorena Mora",
+          "department": "Logística",
+          "title": "Técnico de Almacén",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1671",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1664",
+          "username": "lorena.vega",
+          "upn": "lorena.vega@tarvia.example",
+          "display_name": "Lorena Vega",
+          "department": "Logística",
+          "title": "Responsable de Turno",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "push",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1664",
+          "notes": "",
+          "hr_events": []
+        },
+        {
+          "user_id": "U1689",
+          "username": "rosa.gutierrez",
+          "upn": "rosa.gutierrez@tarvia.example",
+          "display_name": "Rosa Gutiérrez",
+          "department": "Logística",
+          "title": "Responsable de Turno",
+          "location": "Martorell CL",
+          "manager_upn": "sergi.caballero@tarvia.example",
+          "account_type": "user",
+          "privileged": "False",
+          "vip": "False",
+          "mfa_method": "totp",
+          "status": "active",
+          "created": "2019-03-01",
+          "workstation": "WS-LOG-1689",
+          "notes": "",
+          "hr_events": []
+        }
+      ],
+      "changes": [],
+      "services": [
+        {
+          "servicio": "Identidad y directorio activo",
+          "criticidad": "Crítica",
+          "impacto": "Acceso de todos los empleados",
+          "activos": "DC01, DC02, IdP en la nube",
+          "responsable": "Director de Tecnología"
+        }
+      ],
+      "network_zones": [],
+      "missing_lookups": []
+    },
+    "search_plan": {
+      "searches": [
+        {
+          "source": "idp_signins",
+          "query": "198.18.11.130",
+          "reason": "Resolver check_authentication_history_and_mfa_result sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "alvaro.pons",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "enric.gil",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "joan.delgado",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "judith.cortes",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "celia.garcia",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "ferran.reyes",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "laia.pujol",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "lorena.mora",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        },
+        {
+          "source": "idp_audit",
+          "query": "lorena.vega",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-04T01:27:11.000Z",
+          "end": "2026-10-06T01:27:11.000Z"
+        }
+      ]
+    },
+    "search_diagnostics": {
+      "proposed": 1,
+      "accepted": 5,
+      "checks": [
+        {
+          "check": "check_source_geoip_asn_and_hosting_or_tor",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_device_compliance_and_user_agent",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_authentication_history_and_mfa_result",
+          "source": "idp_signins",
+          "status": "searched",
+          "identifier": "198.18.11.130"
+        },
+        {
+          "check": "check_account_privilege_vip_or_service_account_exceptions",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_hr_travel_vacation_or_leave_status",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "alvaro.pons"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "celia.garcia"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "enric.gil"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "ferran.reyes"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "joan.delgado"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "judith.cortes"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "laia.pujol"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "lorena.mora"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "lorena.vega"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "pending",
+          "identifier": "marta.delgado2"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "pending",
+          "identifier": "rosa.gutierrez"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "pending",
+          "identifier": "victor.delgado"
+        },
+        {
+          "check": "check_password_spraying_targeted_accounts_and_failures",
+          "source": "idp_signins",
+          "status": "searched",
+          "identifier": "198.18.11.130"
+        },
+        {
+          "check": "check_subsequent_successful_signins_from_attacker_ip",
+          "source": "idp_signins",
+          "status": "searched",
+          "identifier": "198.18.11.130"
+        }
+      ]
+    },
+    "analysis": {
+      "title": "Intentos de autenticación bloqueados",
+      "verdict": "true_positive",
+      "confidence": 0.8,
+      "summary": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes. El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado. Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+      "findings": [
+        {
+          "statement": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes.",
+          "evidence_ids": [
+            "SIGN-0003615",
+            "SIGN-0003616",
+            "SIGN-0003617",
+            "SIGN-0003618",
+            "SIGN-0003619",
+            "SIGN-0003620",
+            "SIGN-0003621",
+            "SIGN-0003622",
+            "SIGN-0003623",
+            "SIGN-0003624",
+            "SIGN-0003625",
+            "SIGN-0003626"
+          ]
+        },
+        {
+          "statement": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado.",
+          "evidence_ids": [
+            "SIGN-0003615",
+            "SIGN-0003616",
+            "SIGN-0003617",
+            "SIGN-0003618",
+            "SIGN-0003619",
+            "SIGN-0003620",
+            "SIGN-0003621",
+            "SIGN-0003622",
+            "SIGN-0003623",
+            "SIGN-0003624",
+            "SIGN-0003625",
+            "SIGN-0003626"
+          ]
+        },
+        {
+          "statement": "Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta.",
+          "evidence_ids": [
+            "QRY-a5e17691c4fdf8f1",
+            "QRY-1622ce2f7d222865",
+            "QRY-7fd382e40fcc76e0",
+            "QRY-f25c9449a169725c",
+            "QRY-ac2b15bd714e9d00",
+            "QRY-000688bff41d5107",
+            "QRY-f4788d336ba80c28",
+            "QRY-d389cb4ac8671ac2",
+            "QRY-7b98e2fc939afa60",
+            "QRY-f852d29beaf2ad6a"
+          ]
+        }
+      ],
+      "signals": {
+        "execution_or_access_confirmed": false,
+        "blocked_before_effect": true,
+        "privileged_or_vip": false,
+        "sensitive_or_payment_data": false,
+        "malicious_execution": false,
+        "credentials_compromised": false,
+        "persistence": false,
+        "personal_data_exposure": false,
+        "financial_fraud": false,
+        "attack_chain": false,
+        "authorized_activity": false
+      },
+      "proposed_actions": [
+        {
+          "action": "disable_user",
+          "target": "ferran.reyes@tarvia.example",
+          "justification": "Ante la creación de regla de buzón sospechosa asociada a la cuenta y su inclusión en la lista de objetivos del spraying, deshabilitar la cuenta evita uso adicional mientras se verifica qué identidad ejecutó la regla."
+        },
+        {
+          "action": "block_ioc",
+          "target": "198.18.11.130",
+          "justification": "IP de origen del password spraying (IR, AS64695, BAV2ROPC) bloqueada por smart_lockout en los 12 intentos; bloquearla impide nuevos ataques contra la identidad."
+        }
+      ],
+      "open_questions": [
+        "¿La cuenta ferran.reyes fue comprometida efectivamente (sesión activa o cookie robada) o la regla se creó por otro vector; qué sesiones activas y consentimientos OAuth existen para la cuenta?"
+      ]
+    },
+    "analysis_diagnostics": {
+      "raw_analysis": {
+        "title": "Spraying de contraseñas bloqueado desde IR y regla de buzón posterior de ferran.reyes",
+        "verdict": "true_positive",
+        "confidence": 0.92,
+        "summary": "Actividad de password spraying (T1110.003) contra 12 cuentas distintas de tarvia.example desde la IP 198.18.11.130 (IR, AS64695, user_agent BAV2ROPC legacy) entre 2026-10-05T01:20:00Z y 01:23:40Z; las 12 autenticaciones fueron bloqueadas por smart_lockout sin éxito (0 successes) y sin intento real de MFA (mfa_result=not_attempted). No existe cambio ni excepción que autorice esta actividad. Además, a las 10:01:40Z se registró una New-InboxRule (regla de buzón) creada por la cuenta ferran.reyes desde la IP 198.18.200.10, lo que representa persistencia potencial asociada al incidente, pero que no puede vincularse con certeza a los intentos fallidos de spraying y requiere verificación de qué sesión/identidad ejecutó realmente la regla.",
+        "findings": [
+          {
+            "statement": "La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes.",
+            "evidence_ids": [
+              "ALR-20261005-000272",
+              "SIGN-0003615",
+              "SIGN-0003616",
+              "SIGN-0003617",
+              "SIGN-0003618",
+              "SIGN-0003619",
+              "SIGN-0003620",
+              "SIGN-0003621",
+              "SIGN-0003622",
+              "SIGN-0003623",
+              "SIGN-0003624",
+              "SIGN-0003625",
+              "SIGN-0003626"
+            ]
+          },
+          {
+            "statement": "El origen es infraestructura de atacante: country=IR, ASN AS64695, user_agent=BAV2ROPC (legacy auth ROPC bloqueado por política), sin dispositivo conocido ni conforme (device_id vacío, device_compliant=false), lo que confirma intento no legítimo y no autorizado.",
+            "evidence_ids": [
+              "SIGN-0003615",
+              "SIGN-0003616",
+              "SIGN-0003617",
+              "SIGN-0003618",
+              "SIGN-0003619",
+              "SIGN-0003620",
+              "SIGN-0003621",
+              "SIGN-0003622",
+              "SIGN-0003623",
+              "SIGN-0003624",
+              "SIGN-0003625",
+              "SIGN-0003626"
+            ]
+          },
+          {
+            "statement": "No hubo compromiso de credenciales ni ejecución de MFA: los 12 eventos muestran mfa_result=not_attempted, por lo que la fatiga MFA no se produjo y no hay evidencia de robo ni uso ilegítimo de credenciales.",
+            "evidence_ids": [
+              "SIGN-0003615",
+              "SIGN-0003616",
+              "SIGN-0003617",
+              "SIGN-0003618",
+              "SIGN-0003619",
+              "SIGN-0003620",
+              "SIGN-0003621",
+              "SIGN-0003622",
+              "SIGN-0003623",
+              "SIGN-0003624",
+              "SIGN-0003625",
+              "SIGN-0003626"
+            ]
+          },
+          {
+            "statement": "Las cuentas objetivo (joan.delgado, victor.delgado, marta.delgado2, judith.cortes, enric.gil, alvaro.pons, celia.garcia, ferran.reyes, laia.pujol, rosa.gutierrez, lorena.mora, lorena.vega) figuren en context.users como no privileged y no vip, por lo que el indicador privileged_or_vip no se cumple para ninguna de ellas.",
+            "evidence_ids": [
+              "context"
+            ]
+          },
+          {
+            "statement": "La cuenta alvaro.pons (U1808) aparece en context con department=Compras, account_type=user, privileged=False, vip=False y sin hr_events, por lo que no es objetivo privilegiado/VIP ni está de viaje/baja.",
+            "evidence_ids": [
+              "context"
+            ]
+          },
+          {
+            "statement": "No existe ningún cambio ni excepción aprobada en context.changes que autorice autenticaciones desde 198.18.11.130 o desde infraestructura de atacante, por lo que la actividad no está cubierta por excepción.",
+            "evidence_ids": [
+              "context"
+            ]
+          },
+          {
+            "statement": "A las 2026-10-05T10:01:40.274Z se registró el evento AUD-0000019: New-InboxRule 'Proveedores' creada por ferran.reyes desde 198.18.200.10 moviendo correos de jira@ a carpeta; esta regla representa persistencia potencial pero su origen (IP distinta a la del spraying) y la identidad real detrás de la ejecución requieren verificación antes de atribuirla a la intrusión.",
+            "evidence_ids": [
+              "AUD-0000019"
+            ]
+          },
+          {
+            "statement": "Las consultas idp_audit para alvaro.pons, enric.gil, joan.delgado, judith.cortes, celia.garcia, laia.pujol, lorena.mora y lorena.vega devolvieron count=0 (truncated=false), mientras que ferran.reyes devolvió count=1 (coincidiendo con AUD-0000019); esto acota la actividad posterior aESA fuente y ventana pero no prueba ausencia universal de persistencia fuera de la consulta.",
+            "evidence_ids": [
+              "QRY-a5e17691c4fdf8f1",
+              "QRY-1622ce2f7d222865",
+              "QRY-7fd382e40fcc76e0",
+              "QRY-f25c9449a169725c",
+              "QRY-ac2b15bd714e9d00",
+              "QRY-000688bff41d5107",
+              "QRY-f4788d336ba80c28",
+              "QRY-d389cb4ac8671ac2",
+              "QRY-7b98e2fc939afa60",
+              "QRY-f852d29beaf2ad6a"
+            ]
+          }
+        ],
+        "signals": {
+          "execution_or_access_confirmed": false,
+          "blocked_before_effect": true,
+          "privileged_or_vip": false,
+          "sensitive_or_payment_data": false,
+          "malicious_execution": false,
+          "credentials_compromised": false,
+          "persistence": true,
+          "personal_data_exposure": false,
+          "financial_fraud": false,
+          "attack_chain": true,
+          "authorized_activity": false
+        },
+        "proposed_actions": [
+          {
+            "action": "revoke_sessions",
+            "target": "ferran.reyes@tarvia.example",
+            "justification": "La creación de una New-InboxRule (AUD-0000019) desde una IP no asociada al entorno legítimo de ferran.reyes sugiere posible sesión comprometida; revocar sesiones de la cuenta permite contener persistencia OAuth/buzón potencial antes de confirmar el autor real."
+          },
+          {
+            "action": "disable_user",
+            "target": "ferran.reyes@tarvia.example",
+            "justification": "Ante la creación de regla de buzón sospechosa asociada a la cuenta y su inclusión en la lista de objetivos del spraying, deshabilitar la cuenta evita uso adicional mientras se verifica qué identidad ejecutó la regla."
+          },
+          {
+            "action": "block_ioc",
+            "target": "198.18.11.130",
+            "justification": "IP de origen del password spraying (IR, AS64695, BAV2ROPC) bloqueada por smart_lockout en los 12 intentos; bloquearla impide nuevos ataques contra la identidad."
+          },
+          {
+            "action": "block_ioc",
+            "target": "198.18.200.10",
+            "justification": "Origen desde el cual se creó la New-InboxRule (AUD-0000019); su reputación no está verificada y puede estar vinculada a la persistencia, por lo que conviene bloquearla en coordinación con Identidad."
+          },
+          {
+            "action": "disable_access_key",
+            "target": "no_applicable_no_access_keys_detected",
+            "justification": "No hay claves IAM o accessKeyId en las evidencias; esta acción no aplica en este incidente."
+          },
+          {
+            "action": "escalate_to_identity_team",
+            "target": "verificacion_autor_reegra_buzon_AUD-0000019",
+            "justification": "Determinar qué identidad y dispositivo ejecutó realmentela New-InboxRule desde 198.18.200.10 y si está vinculada a la intrusión de spraying; requiere revisión de idp_audit completo y sesiones activas de ferran.reyes."
+          }
+        ],
+        "open_questions": [
+          "¿Qué identidad y dispositivo ejecutó realmente la New-InboxRule (AUD-0000019) desde 198.18.200.10 y existe nexo verificable con los 12 intentos de spray desde 198.18.11.130, o son actividades independientes?",
+          "¿La cuenta ferran.reyes fue comprometida efectivamente (sesión activa o cookie robada) o la regla se creó por otro vector; qué sesiones activas y consentimientos OAuth existen para la cuenta?",
+          "¿Existe persistencia adicional (OAuth app, métodos MFA nuevos, otras reglas de buzón) fuera de la ventana y fuente acotadas por las consultas idp_audit (count para otras cuentas=0 pero sin verificar ausencia universal)?"
+        ]
+      },
+      "warnings": [
+        "Referencias ausentes, ambiguas o no mostradas en el hallazgo: La alerta ALR-20261005-000272 (UC-IDP-002, Password spraying, T1110.003) describe 12 fallos de autenticación desde 198.18.11.130 contra 12 cuentas distintas; los 12 eventos idp_signins confirmados (SIGN-0003615 a SIGN-0003626) muestran result=failure con failure_reason=blocked_by_smart_lockout, sin successes.",
+        "Hallazgo no confirmado: No hubo compromiso de credenciales ni ejecución de MFA: los 12 eventos muestran mfa_result=not_attempted, por lo que la fatiga MFA no se produjo y no hay evidencia de robo ni uso ilegítimo de credenciales. Motivo: ausencia no demostrada: limitar la conclusión a consultas completas, filtros y ventanas.",
+        "Referencias ausentes, ambiguas o no mostradas en el hallazgo: Las cuentas objetivo (joan.delgado, victor.delgado, marta.delgado2, judith.cortes, enric.gil, alvaro.pons, celia.garcia, ferran.reyes, laia.pujol, rosa.gutierrez, lorena.mora, lorena.vega) figuren en context.users como no privileged y no vip, por lo que el indicador privileged_or_vip no se cumple para ninguna de ellas.",
+        "Afirmación descartada por soporte insuficiente: Las cuentas objetivo (joan.delgado, victor.delgado, marta.delgado2, judith.cortes, enric.gil, alvaro.pons, celia.garcia, ferran.reyes, laia.pujol, rosa.gutierrez, lorena.mora, lorena.vega) figuren en context.users como no privileged y no vip, por lo que el indicador privileged_or_vip no se cumple para ninguna de ellas.",
+        "Referencias ausentes, ambiguas o no mostradas en el hallazgo: La cuenta alvaro.pons (U1808) aparece en context con department=Compras, account_type=user, privileged=False, vip=False y sin hr_events, por lo que no es objetivo privilegiado/VIP ni está de viaje/baja.",
+        "Afirmación descartada por soporte insuficiente: La cuenta alvaro.pons (U1808) aparece en context con department=Compras, account_type=user, privileged=False, vip=False y sin hr_events, por lo que no es objetivo privilegiado/VIP ni está de viaje/baja.",
+        "Referencias ausentes, ambiguas o no mostradas en el hallazgo: No existe ningún cambio ni excepción aprobada en context.changes que autorice autenticaciones desde 198.18.11.130 o desde infraestructura de atacante, por lo que la actividad no está cubierta por excepción.",
+        "Afirmación descartada por soporte insuficiente: No existe ningún cambio ni excepción aprobada en context.changes que autorice autenticaciones desde 198.18.11.130 o desde infraestructura de atacante, por lo que la actividad no está cubierta por excepción.",
+        "Hallazgo no confirmado: A las 2026-10-05T10:01:40.274Z se registró el evento AUD-0000019: New-InboxRule 'Proveedores' creada por ferran.reyes desde 198.18.200.10 moviendo correos de jira@ a carpeta; esta regla representa persistencia potencial pero su origen (IP distinta a la del spraying) y la identidad real detrás de la ejecución requieren verificación antes de atribuirla a la intrusión. Motivo: persistence: falta soporte estructurado vinculado a la actividad.",
+        "Se corrigió persistence: la salida propuesta no tenía soporte coherente verificable.",
+        "Se corrigió attack_chain: la salida propuesta no tenía soporte coherente verificable.",
+        "Propuesta descartada por soporte, formato, objetivo o restricción OT: revoke_sessions sobre ferran.reyes@tarvia.example.",
+        "Propuesta descartada por soporte, formato, objetivo o restricción OT: block_ioc sobre 198.18.200.10.",
+        "Propuesta descartada por soporte, formato, objetivo o restricción OT: disable_access_key sobre no_applicable_no_access_keys_detected.",
+        "Propuesta descartada por soporte, formato, objetivo o restricción OT: escalate_to_identity_team sobre verificacion_autor_reegra_buzon_AUD-0000019."
+      ],
+      "corrected_signals": [
+        "persistence",
+        "attack_chain"
+      ],
+      "rejected_findings": 5,
+      "prompt_coverage": {
+        "events": {
+          "unique_records": 13,
+          "included": 13,
+          "omitted": 0,
+          "duplicates_removed": 0,
+          "first": "2026-10-05T01:20:00.000Z",
+          "last": "2026-10-05T10:01:40.274Z"
+        },
+        "related_alerts": {
+          "unique_records": 0,
+          "included": 0,
+          "omitted": 0,
+          "duplicates_removed": 0
+        },
+        "intel": {
+          "unique_records": 0,
+          "included": 0,
+          "omitted": 0,
+          "duplicates_removed": 0
+        }
+      }
+    },
+    "verdict": {
+      "verdict": "true_positive",
+      "confidence": 0.8,
+      "rationale": "Se mantiene true_positive: no se detectan problemas decisivos verificables. Se comprueba la trazabilidad y la coherencia, no el significado técnico de todos los eventos. Los PolicySignals son afirmaciones del LLM."
+    },
+    "related_alerts": [],
+    "evidence": [
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003615",
+        "timestamp": "2026-10-05T01:20:00.000Z",
+        "raw": {
+          "event_id": "SIGN-0003615",
+          "timestamp": "2026-10-05T01:20:00.000Z",
+          "user_upn": "joan.delgado@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-43488d79e4913609",
+          "q": "SIGN-0003615",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003616",
+        "timestamp": "2026-10-05T01:20:20.000Z",
+        "raw": {
+          "event_id": "SIGN-0003616",
+          "timestamp": "2026-10-05T01:20:20.000Z",
+          "user_upn": "victor.delgado@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-64495f802566eb51",
+          "q": "SIGN-0003616",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003617",
+        "timestamp": "2026-10-05T01:20:40.000Z",
+        "raw": {
+          "event_id": "SIGN-0003617",
+          "timestamp": "2026-10-05T01:20:40.000Z",
+          "user_upn": "marta.delgado2@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-149f22e4f2f024e5",
+          "q": "SIGN-0003617",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003618",
+        "timestamp": "2026-10-05T01:21:00.000Z",
+        "raw": {
+          "event_id": "SIGN-0003618",
+          "timestamp": "2026-10-05T01:21:00.000Z",
+          "user_upn": "judith.cortes@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-c36486d2df339640",
+          "q": "SIGN-0003618",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003619",
+        "timestamp": "2026-10-05T01:21:20.000Z",
+        "raw": {
+          "event_id": "SIGN-0003619",
+          "timestamp": "2026-10-05T01:21:20.000Z",
+          "user_upn": "enric.gil@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-883a0356ae37747c",
+          "q": "SIGN-0003619",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003620",
+        "timestamp": "2026-10-05T01:21:40.000Z",
+        "raw": {
+          "event_id": "SIGN-0003620",
+          "timestamp": "2026-10-05T01:21:40.000Z",
+          "user_upn": "alvaro.pons@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-70c45ba358bc5e55",
+          "q": "SIGN-0003620",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003621",
+        "timestamp": "2026-10-05T01:22:00.000Z",
+        "raw": {
+          "event_id": "SIGN-0003621",
+          "timestamp": "2026-10-05T01:22:00.000Z",
+          "user_upn": "celia.garcia@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003622",
+        "timestamp": "2026-10-05T01:22:20.000Z",
+        "raw": {
+          "event_id": "SIGN-0003622",
+          "timestamp": "2026-10-05T01:22:20.000Z",
+          "user_upn": "ferran.reyes@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003623",
+        "timestamp": "2026-10-05T01:22:40.000Z",
+        "raw": {
+          "event_id": "SIGN-0003623",
+          "timestamp": "2026-10-05T01:22:40.000Z",
+          "user_upn": "laia.pujol@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003624",
+        "timestamp": "2026-10-05T01:23:00.000Z",
+        "raw": {
+          "event_id": "SIGN-0003624",
+          "timestamp": "2026-10-05T01:23:00.000Z",
+          "user_upn": "rosa.gutierrez@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "totp",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003625",
+        "timestamp": "2026-10-05T01:23:20.000Z",
+        "raw": {
+          "event_id": "SIGN-0003625",
+          "timestamp": "2026-10-05T01:23:20.000Z",
+          "user_upn": "lorena.vega@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": "SIGN-0003626",
+        "timestamp": "2026-10-05T01:23:40.000Z",
+        "raw": {
+          "event_id": "SIGN-0003626",
+          "timestamp": "2026-10-05T01:23:40.000Z",
+          "user_upn": "lorena.mora@tarvia.example",
+          "app": "Office 365 Exchange Online",
+          "result": "failure",
+          "failure_reason": "blocked_by_smart_lockout",
+          "mfa_method": "push",
+          "mfa_result": "not_attempted",
+          "src_ip": "198.18.11.130",
+          "country": "IR",
+          "city": "",
+          "asn": "AS64695",
+          "user_agent": "BAV2ROPC",
+          "device_id": "",
+          "device_compliant": false,
+          "session_id": "",
+          "risk_level": "medium",
+          "conditional_access": "failure"
+        }
+      },
+      {
+        "source": "idp_signins",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-a5e17691c4fdf8f1",
+          "q": "198.18.11.130",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_authentication_history_and_mfa_result sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 12,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-1622ce2f7d222865",
+          "q": "alvaro.pons",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-7fd382e40fcc76e0",
+          "q": "enric.gil",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-f25c9449a169725c",
+          "q": "joan.delgado",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-ac2b15bd714e9d00",
+          "q": "judith.cortes",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-000688bff41d5107",
+          "q": "celia.garcia",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": "AUD-0000019",
+        "timestamp": "2026-10-05T10:01:40.274Z",
+        "raw": {
+          "event_id": "AUD-0000019",
+          "timestamp": "2026-10-05T10:01:40.274Z",
+          "actor_upn": "ferran.reyes@tarvia.example",
+          "operation": "New-InboxRule",
+          "target": "ferran.reyes@tarvia.example",
+          "src_ip": "198.18.200.10",
+          "details": {
+            "rule_name": "Proveedores",
+            "conditions": {
+              "from_contains": "jira@"
+            },
+            "actions": {
+              "move_to_folder": "Proveedores"
+            }
+          }
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-f4788d336ba80c28",
+          "q": "ferran.reyes",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 1,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-f852d29beaf2ad6a",
+          "q": "laia.pujol",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-d389cb4ac8671ac2",
+          "q": "lorena.mora",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      },
+      {
+        "source": "idp_audit",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-7b98e2fc939afa60",
+          "q": "lorena.vega",
+          "desde": "2026-10-04T01:27:11.000Z",
+          "hasta": "2026-10-06T01:27:11.000Z",
+          "reason": "Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 0,
+          "truncated": false
+        }
+      }
+    ]
+  },
+  "trace": [
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "get_alert",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.801487Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "get_alert",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.805490Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "extract_entities",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.806023Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "extract_entities",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.806411Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "extract_indicators",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.806812Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "extract_indicators",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.807145Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "load_runbook",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.807426Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "load_runbook",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.807693Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "get_strategy",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.807948Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "get_strategy",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.808204Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "build_plan",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.808457Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "build_plan",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.808738Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_context",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.809006Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_context",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.813251Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_intel",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.813731Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_intel",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:36.814034Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "collect_related_events",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:36.814314Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "collect_related_events",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:37.063879Z",
+      "count": 6,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "find_related_alerts",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:37.064378Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "find_related_alerts",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:37.100394Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:37.101051Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:37.116377Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "plan_searches",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:37.116874Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "plan_searches",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:42.100910Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "search_evidence",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:42.101746Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "search_evidence",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:42.168753Z",
+      "count": 12,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:42.169668Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:42.187980Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "plan_followup_searches",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:42.189520Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "plan_followup_searches",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:44.763595Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "search_followup_evidence",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:44.764932Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "search_followup_evidence",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:44.779048Z",
+      "count": 1,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:44.779788Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:44.784532Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "investigation_coverage",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:44.785833Z",
+      "proposed": 1,
+      "accepted": 5,
+      "checks": [
+        {
+          "check": "check_source_geoip_asn_and_hosting_or_tor",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_device_compliance_and_user_agent",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_authentication_history_and_mfa_result",
+          "source": "idp_signins",
+          "status": "searched",
+          "identifier": "198.18.11.130"
+        },
+        {
+          "check": "check_account_privilege_vip_or_service_account_exceptions",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_hr_travel_vacation_or_leave_status",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "alvaro.pons"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "celia.garcia"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "enric.gil"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "ferran.reyes"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "joan.delgado"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "judith.cortes"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "laia.pujol"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "lorena.mora"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "searched",
+          "identifier": "lorena.vega"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "pending",
+          "identifier": "marta.delgado2"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "pending",
+          "identifier": "rosa.gutierrez"
+        },
+        {
+          "check": "check_post_signin_audit_activity",
+          "source": "idp_audit",
+          "status": "pending",
+          "identifier": "victor.delgado"
+        },
+        {
+          "check": "check_password_spraying_targeted_accounts_and_failures",
+          "source": "idp_signins",
+          "status": "searched",
+          "identifier": "198.18.11.130"
+        },
+        {
+          "check": "check_subsequent_successful_signins_from_attacker_ip",
+          "source": "idp_signins",
+          "status": "searched",
+          "identifier": "198.18.11.130"
+        }
+      ]
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "analyze",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:44.786207Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "analyze",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.024373Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "decide_verdict",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.024968Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "decide_verdict",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.025470Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "calculate_severity",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.025768Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "calculate_severity",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.026075Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "decide_escalation",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.026364Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "decide_escalation",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.026682Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "recommend_actions",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.026956Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "recommend_actions",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.027329Z",
+      "count": 2,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "build_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.027627Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "build_ticket",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.028084Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "validate_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.028425Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "validate_ticket",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:52:22.030412Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000272",
+      "stage": "save_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:52:22.031077Z"
+    }
+  ],
+  "decision": null,
+  "note": null,
+  "review_timestamp": null,
+  "review": {
+    "decision": null,
+    "note": null,
+    "timestamp": null
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "ticket_id": "TRIAGE-86a61e8d-9a6c-488c-a670-4b483757f264",
+  "alert_ids": [
+    "ALR-20261005-000272"
+  ],
+  "title": "Intentos de autenticación bloqueados",
+  "verdict": "true_positive",
+  "confidence": 0.8,
+  "severity": "high",
+  "summary": "La cuenta ferran.reyes fue objetivo de password spraying desde 198.18.11.130 (IR, AS64695, user_agent BAV2ROPC, legacy auth) y el intento fue bloqueado por smart lockout; el resultado observado es 0 accesos exitosos para esa fase. El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying. No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003622",
+      "finding": "La cuenta ferran.reyes fue objetivo de password spraying desde 198.18.11.130 (IR, AS64695, user_agent BAV2ROPC, legacy auth) y el intento fue bloqueado por smart lockout; el resultado observado es 0 accesos exitosos para esa fase."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003615",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003616",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003617",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003618",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003619",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003620",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003621",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003623",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003624",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003625",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "event_id": "SIGN-0003626",
+      "finding": "El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-43488d79e4913609 literal en idp_signins: q='SIGN-0003615'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-64495f802566eb51 literal en idp_signins: q='SIGN-0003616'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-149f22e4f2f024e5 literal en idp_signins: q='SIGN-0003617'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-c36486d2df339640 literal en idp_signins: q='SIGN-0003618'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-883a0356ae37747c literal en idp_signins: q='SIGN-0003619'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La cuenta ferran.reyes fue objetivo de password spraying desde 198.18.11.130 (IR, AS64695, user_agent BAV2ROPC, legacy auth) y el intento fue bloqueado por smart lockout; el resultado observado es 0 accesos exitosos para esa fase. El spray abarcó 12 cuentas distintas de Office 365 Exchange Online desde un único origen, con 12 fallos bloqueados por smart lockout y MFA no intentado (mfa_result=not_attempted), patrón clásico de password spraying."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-70c45ba358bc5e55 literal en idp_signins: q='SIGN-0003620'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True."
+    },
+    {
+      "source": "idp_signins",
+      "finding": "Consulta QRY-a5e17691c4fdf8f1 literal en idp_signins: q='198.18.11.130'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=12; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_authentication_history_and_mfa_result sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-1622ce2f7d222865 literal en idp_audit: q='alvaro.pons'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-7fd382e40fcc76e0 literal en idp_audit: q='enric.gil'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f25c9449a169725c literal en idp_audit: q='joan.delgado'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-ac2b15bd714e9d00 literal en idp_audit: q='judith.cortes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-000688bff41d5107 literal en idp_audit: q='celia.garcia'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f4788d336ba80c28 literal en idp_audit: q='ferran.reyes'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-f852d29beaf2ad6a literal en idp_audit: q='laia.pujol'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-d389cb4ac8671ac2 literal en idp_audit: q='lorena.mora'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    },
+    {
+      "source": "idp_audit",
+      "finding": "Consulta QRY-7b98e2fc939afa60 literal en idp_audit: q='lorena.vega'; desde=2026-10-04T01:27:11.000Z; hasta=2026-10-06T01:27:11.000Z; registros devueltos=0; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. No se encontraron coincidencias en esa consulta concreta. Motivo: Resolver check_post_signin_audit_activity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: No se recuperó ninguna otra actividad post-login para las cuentas objetivo en idp_audit dentro de la ventana; la única regla de buzón detectada corresponde a ferran.reyes, que es una de las cuentas atacadas."
+    }
+  ],
+  "recommended_actions": [],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "Escalado obligatorio a N2 según la política SOC. True positive de severidad high. Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+  },
+  "severity_rationale": "Severidad inicial: high. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: critical. Ajuste -1 según analysis.signals por bloqueo confirmado antes de producir efecto y ausencia de actividad posterior relevante. Severidad final: high.",
+  "affected": {
+    "ips": [
+      "198.18.11.130"
+    ],
+    "users": [
+      "(12 cuentas)"
+    ],
+    "business_services": [
+      "Identidad y directorio activo"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1110.003"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Existe algún cambio, excepción de acceso o flujo autorizado (ej. integración jira@) que justifique la regla New-InboxRule \"Proveedores\" de ferran.reyes? De no haberla, la persistencia es no autorizada.",
+    "¿La regla de buzón generó movimiento de correos sensibles o datos personales fuera de la cuenta? La ausencia de evidencia de exfiltración en la ventana no descarta salida posterior.",
+    "¿La cuenta ferran.reyes pudo ser víctima de fatiga MFA o el bloqueo por smart lockout impidió el uso de credenciales? Mfa_result=not_attempted sugiere bloqueo previo, pero el acceso post-login no verificado requiere confirmación del método de autenticación usado en AUD-0000019."
+  ],
+  "triage_seconds": 46.66686599999957
+}

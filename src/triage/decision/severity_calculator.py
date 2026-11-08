@@ -109,6 +109,8 @@ class SeverityCalculator:
                 continue
         linked_names = {str(a.get("business_service", "")).split(" (≈", 1)[0].casefold()
                         for a in context.assets if affected_ids & identifiers([a])}
+        if alert.get("source_product") in {"IDP", "AD"}:
+            linked_names.add("identidad y directorio activo")
         if "www.tarvia.example" in domains and alert.get("source_product") in {"WAF", "ECOM"}:
             linked_names.add("tienda online y app")
         for service in context.services:

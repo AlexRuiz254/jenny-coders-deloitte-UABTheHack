@@ -1,0 +1,1418 @@
+{
+  "id": "TRIAGE-eca47bbb-7ea2-411b-b5e9-6341f51cd34a",
+  "alert_id": "ALR-20261005-000427",
+  "status": "new",
+  "created_at": "2026-11-08T04:51:35.141683Z",
+  "details": {
+    "ticket": {
+      "ticket_id": "TRIAGE-eca47bbb-7ea2-411b-b5e9-6341f51cd34a",
+      "alert_ids": [
+        "ALR-20261005-000427"
+      ],
+      "title": "Escaneo de endpoint LuCI bloqueado por WAF",
+      "verdict": "needs_more_info",
+      "confidence": 0.5,
+      "severity": "medium",
+      "summary": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend. La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales. Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa. Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+      "evidence": [
+        {
+          "source": "waf",
+          "event_id": "WAF-0001904",
+          "finding": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend."
+        },
+        {
+          "source": "waf",
+          "event_id": "WAF-0001904",
+          "finding": "Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa."
+        },
+        {
+          "source": "waf",
+          "finding": "Consulta QRY-5a6cf132fa3d0149 literal en waf: q='WAF-0001904'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales."
+        },
+        {
+          "source": "waf",
+          "finding": "Consulta QRY-72ba6ce5ea4019fd literal en waf: q='198.18.11.240'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_waf_action_blocked_or_passed_to_backend sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales."
+        }
+      ],
+      "recommended_actions": [
+        {
+          "action": "review_distributed_web_scan",
+          "target": "www.tarvia.example",
+          "requires_approval": false,
+          "justification": "22 escaneos bloqueados desde múltiples IPs sobre la misma ruta indican campaña de escaneo distribuido; requiere que E-commerce/WAF revisen la exposición de esa interfaz, confirmen que no hay acceso exitoso y consideren rate limit/captcha sin bloquear el servicio legítimo. Recomendación manual sin aprobación formal de contención; no ejecutar como endpoint de la API."
+        }
+      ],
+      "escalation": {
+        "escalate": false,
+        "to": "",
+        "reason": "Veredicto validado: needs_more_info; severidad final: medium. No se cumplen criterios de escalado obligatorio según la política SOC ni se han comunicado señales específicas de compromiso. Mantener la investigación en N1."
+      },
+      "severity_rationale": "Severidad inicial: low. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: medium. Sin ajuste: analysis.signals no indica factores de subida ni bloqueo completo. Severidad final: medium.",
+      "affected": {
+        "ips": [
+          "198.18.11.240"
+        ],
+        "urls": [
+          "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+        ],
+        "business_services": [
+          "Tienda online y app"
+        ]
+      },
+      "enrichment": [],
+      "mitre": [
+        "T1190"
+      ],
+      "executed_actions": [],
+      "open_questions": [
+        "Existe algún pentest/cambio autorizado (context.changes) sobre la aplicación web en la ventana? Su ausencia impifica calificar la actividad como pentest autorizado.",
+        "Hubo salida exitosa al backend, creación de web shell o lectura de datos tras las peticiones bloqueadas? El WAF solo acredita el intento bloqueado, no la explotación.",
+        "Las 22 IPs son bloques de escaneo públicos coordinados o parte de una intrusión mayor con fases de acceso/exfiltración verificables (identificador de despliegue común, C2, exfiltración)?"
+      ],
+      "triage_seconds": 26.412246699997922
+    },
+    "source": "generated",
+    "alert": {
+      "alert_id": "ALR-20261005-000427",
+      "created_at": "2026-10-04T23:19:27.000Z",
+      "source_product": "WAF",
+      "rule_id": "UC-WEB-001",
+      "rule_name": "Ataque de inyección contra aplicación web",
+      "severity": "low",
+      "status": "new",
+      "mitre": {
+        "tactic": "Initial Access",
+        "technique_id": "T1190",
+        "technique": "Exploit Public-Facing Application"
+      },
+      "description": "Firma SQLi/XSS/LFI en el WAF.",
+      "entities": {
+        "ips": [
+          "198.18.11.240"
+        ],
+        "urls": [
+          "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+        ]
+      },
+      "evidence": {
+        "rule_id": "932150",
+        "rule_msg": "Remote Command Execution",
+        "hits": 10,
+        "action": "blocked"
+      },
+      "related_events": [
+        "WAF-0001904"
+      ],
+      "runbook": "RB-05"
+    },
+    "runbook_id": "RB-05",
+    "runbook_text": "# RB-05 Tienda online, fraude y ataques web\n**Reglas:** UC-WEB-001 a UC-WEB-003, UC-EDR-009\n\n## Comprobaciones\n1. ¿El WAF bloqueó? ¿La ruta existe y es vulnerable (`vulnerabilidades.csv`)? ¿Origen autorizado (pentest)?\n2. Credential stuffing: volumen, IPs, huella del dispositivo y, sobre todo, **cuántos accesos correctos**.\n3. Para cada acceso correcto: ¿cambio de email/dirección o compra de tarjeta regalo después (`ecom_account`)?\n4. Web shell: ¿el servidor web lanzó una shell? ¿Qué leyó?\n\n## Decisión\n- Escaneo bloqueado o pentest autorizado → cerrar.\n- Stuffing con accesos correctos → bloquear origen, activar captcha y rate limit, resetear cuentas afectadas, avisar al equipo de Fraude.\n- Web shell → proponer aislar el nodo (quedan otros frontales), rotar secretos y escalar.\n",
+    "context": {
+      "assets": [],
+      "users": [],
+      "changes": [],
+      "services": [
+        {
+          "servicio": "Tienda online y app",
+          "criticidad": "Crítica",
+          "impacto": "38% de la facturación; 1,3 M clientes registrados",
+          "activos": "WEB-ECOM01..04, PAY-GW01, SQL-CRM01",
+          "responsable": "Directora de E-commerce"
+        }
+      ],
+      "network_zones": [],
+      "missing_lookups": []
+    },
+    "search_plan": {
+      "searches": [
+        {
+          "source": "waf",
+          "query": "198.18.11.240",
+          "reason": "Resolver check_waf_action_blocked_or_passed_to_backend sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "start": "2026-10-03T23:19:27.000Z",
+          "end": "2026-10-05T23:19:27.000Z"
+        }
+      ]
+    },
+    "search_diagnostics": {
+      "proposed": 2,
+      "accepted": 1,
+      "checks": [
+        {
+          "check": "check_waf_action_blocked_or_passed_to_backend",
+          "source": "waf",
+          "status": "searched",
+          "identifier": "198.18.11.240"
+        },
+        {
+          "check": "check_authorized_external_pentest_window_and_source",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_target_endpoint_existence_and_vulnerability_status",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_web_injection_payload_sqli_xss_lfi",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_backend_exploitation_and_database_queries",
+          "source": "sql_audit",
+          "status": "pending",
+          "limitation": "Falta un identificador compatible o una ventana válida; no se inventa una consulta."
+        }
+      ]
+    },
+    "analysis": {
+      "title": "Escaneo de endpoint LuCI bloqueado por WAF",
+      "verdict": "needs_more_info",
+      "confidence": 0.5,
+      "summary": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend. La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales. Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa. Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+      "findings": [
+        {
+          "statement": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend.",
+          "evidence_ids": [
+            "WAF-0001904"
+          ]
+        },
+        {
+          "statement": "La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales.",
+          "evidence_ids": [
+            "QRY-5a6cf132fa3d0149",
+            "QRY-72ba6ce5ea4019fd"
+          ]
+        },
+        {
+          "statement": "Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa.",
+          "evidence_ids": [
+            "WAF-0001904"
+          ]
+        }
+      ],
+      "signals": {
+        "execution_or_access_confirmed": false,
+        "blocked_before_effect": false,
+        "privileged_or_vip": false,
+        "sensitive_or_payment_data": false,
+        "malicious_execution": false,
+        "credentials_compromised": false,
+        "persistence": false,
+        "personal_data_exposure": false,
+        "financial_fraud": false,
+        "attack_chain": false,
+        "authorized_activity": false
+      },
+      "proposed_actions": [
+        {
+          "action": "review_distributed_web_scan",
+          "target": "www.tarvia.example",
+          "justification": "22 escaneos bloqueados desde múltiples IPs sobre la misma ruta indican campaña de escaneo distribuido; requiere que E-commerce/WAF revisen la exposición de esa interfaz, confirmen que no hay acceso exitoso y consideren rate limit/captcha sin bloquear el servicio legítimo."
+        }
+      ],
+      "open_questions": [
+        "Existe algún pentest/cambio autorizado (context.changes) sobre la aplicación web en la ventana? Su ausencia impifica calificar la actividad como pentest autorizado.",
+        "Hubo salida exitosa al backend, creación de web shell o lectura de datos tras las peticiones bloqueadas? El WAF solo acredita el intento bloqueado, no la explotación.",
+        "Las 22 IPs son bloques de escaneo públicos coordinados o parte de una intrusión mayor con fases de acceso/exfiltración verificables (identificador de despliegue común, C2, exfiltración)?"
+      ]
+    },
+    "analysis_diagnostics": {
+      "raw_analysis": {
+        "title": "Escaneo SQLi contra tienda online bloqueado por WAF (RB-05)",
+        "verdict": "benign_true_positive",
+        "confidence": 0.9,
+        "summary": "El WAF bloqueó (HTTP 403) una petición GET con firma de inyección (rule 932150, Remote Command Execution) contra https://www.tarvia.example/cgi-bin/luci/;stok=/locale desde 198.18.11.240 (RU) a las 2026-10-04T23:18:00Z. La acción fue bloqueada antes de alcanzar el backend y no hay evento de salida exitosa, proceso ni web shell. Las 21 alertas relacionadas comparten URL e intención pero provienen de 21 IPs distintas (bloques escaneo distribuido, no un único atacante). No consta pentest/cambio autorizado en context.changes (vacío), por lo que no puede calificarse como pentest autorizado. La regla WAF acredita escaneo/ataque real; un 403 no demuestra explotación, web shell ni exfiltración.",
+        "findings": [
+          {
+            "statement": "El 2026-10-04T23:18:00Z el WAF registró y bloqueó (status 403, action blocked) una petición GET a /cgi-bin/luci/;stok=/locale con firma rule 932150 (Remote Command Execution) desde 198.18.11.240 (RU), sin salida exitosa al backend.",
+            "evidence_ids": [
+              "WAF-0001904"
+            ]
+          },
+          {
+            "statement": "La consulta QRY-5a6cf132fa3d0149 confirma el evento referenciado por la alerta (WAF-0001904, count 1, truncated=false), y QRY-72ba6ce5ea4019fd acota la actividad de 198.18.11.240 en WAF durante la ventana (count 1, truncated=false) sin mostrar desbordamiento ni resultados adicionales.",
+            "evidence_ids": [
+              "QRY-5a6cf132fa3d0149",
+              "QRY-72ba6ce5ea4019fd"
+            ]
+          },
+          {
+            "statement": "Las 22 alertas comparten la misma URL y regla pero 22 orígenes IP distintos, lo que indica escaneo distribuido coordinado de una regla de aplicación web (UC-WEB-001); laconcurrencia de escaneos bloqueados no prueba por sí sola una cadena de ataque ni explotación exitosa.",
+            "evidence_ids": [
+              "WAF-0001904"
+            ]
+          }
+        ],
+        "signals": {
+          "execution_or_access_confirmed": false,
+          "blocked_before_effect": true,
+          "privileged_or_vip": false,
+          "sensitive_or_payment_data": false,
+          "malicious_execution": false,
+          "credentials_compromised": false,
+          "persistence": false,
+          "personal_data_exposure": false,
+          "financial_fraud": false,
+          "attack_chain": false,
+          "authorized_activity": false
+        },
+        "proposed_actions": [
+          {
+            "action": "block_ioc",
+            "target": "198.18.11.240",
+            "justification": "Origen RU con escaneo SQLi/LFI contra aplicación web pública, firmado por la regla 932150 y bloqueado por el WAF (status 403); contiene el vector de entrada conocido para evitar reintentos."
+          },
+          {
+            "action": "review_distributed_web_scan",
+            "target": "www.tarvia.example CGI de administración (/cgi-bin/luci)",
+            "justification": "22 escaneos bloqueados desde múltiples IPs sobre la misma ruta indican campaña de escaneo distribuido; requiere que E-commerce/WAF revisen la exposición de esa interfaz, confirmen que no hay acceso exitoso y consideren rate limit/captcha sin bloquear el servicio legítimo."
+          }
+        ],
+        "open_questions": [
+          "Existe algún pentest/cambio autorizado (context.changes) sobre la aplicación web en la ventana? Su ausencia impifica calificar la actividad como pentest autorizado.",
+          "Hubo salida exitosa al backend, creación de web shell o lectura de datos tras las peticiones bloqueadas? El WAF solo acredita el intento bloqueado, no la explotación.",
+          "Las 22 IPs son bloques de escaneo públicos coordinados o parte de una intrusión mayor con fases de acceso/exfiltración verificables (identificador de despliegue común, C2, exfiltración)?"
+        ]
+      },
+      "warnings": [
+        "Se corrigió blocked_before_effect: la salida propuesta no tenía soporte coherente verificable.",
+        "Propuesta descartada por soporte, formato, objetivo o restricción OT: block_ioc sobre 198.18.11.240.",
+        "Propuesta benign_true_positive sin soporte suficiente o contradictoria."
+      ],
+      "corrected_signals": [
+        "blocked_before_effect"
+      ],
+      "rejected_findings": 0,
+      "prompt_coverage": {
+        "events": {
+          "unique_records": 1,
+          "included": 1,
+          "omitted": 0,
+          "duplicates_removed": 0,
+          "first": "2026-10-04T23:18:00.000Z",
+          "last": "2026-10-04T23:18:00.000Z"
+        },
+        "related_alerts": {
+          "unique_records": 22,
+          "included": 22,
+          "omitted": 0,
+          "duplicates_removed": 0,
+          "first": "2026-10-05T00:51:01.000Z",
+          "last": "2026-10-05T21:47:38.000Z"
+        },
+        "intel": {
+          "unique_records": 0,
+          "included": 0,
+          "omitted": 0,
+          "duplicates_removed": 0
+        }
+      }
+    },
+    "verdict": {
+      "verdict": "needs_more_info",
+      "confidence": 0.5,
+      "rationale": "Se mantiene la solicitud de información del investigador. Se comprueba la trazabilidad y la coherencia, no el significado técnico de todos los eventos. Los PolicySignals son afirmaciones del LLM."
+    },
+    "related_alerts": [
+      {
+        "alert_id": "ALR-20261005-000261",
+        "created_at": "2026-10-05T00:51:01.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.120"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 27,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001868"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000173",
+        "created_at": "2026-10-05T02:51:28.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.50"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 12,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001841"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000249",
+        "created_at": "2026-10-05T03:07:27.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.108"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 26,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001856"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000262",
+        "created_at": "2026-10-05T03:59:12.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.121"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 18,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001869"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000162",
+        "created_at": "2026-10-05T04:19:32.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.39"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 30,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001830"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000341",
+        "created_at": "2026-10-05T04:35:31.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.177"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 3,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001884"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000426",
+        "created_at": "2026-10-05T05:06:36.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.239"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 18,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001903"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000076",
+        "created_at": "2026-10-05T07:44:42.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.10.221"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 1,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001815"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000243",
+        "created_at": "2026-10-05T08:32:22.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.102"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 16,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001850"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000256",
+        "created_at": "2026-10-05T11:00:39.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.115"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 12,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001863"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000171",
+        "created_at": "2026-10-05T11:11:43.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.48"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 4,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001839"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000442",
+        "created_at": "2026-10-05T11:43:10.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.12.5"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 23,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001919"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000163",
+        "created_at": "2026-10-05T14:04:26.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.40"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 11,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001831"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000083",
+        "created_at": "2026-10-05T14:18:19.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.10.228"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 28,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001822"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000441",
+        "created_at": "2026-10-05T14:40:24.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.12.4"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 30,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001918"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000434",
+        "created_at": "2026-10-05T15:23:20.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.247"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 18,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001911"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000167",
+        "created_at": "2026-10-05T17:50:35.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.44"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 9,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001835"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000072",
+        "created_at": "2026-10-05T18:32:46.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.10.217"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 9,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001811"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000264",
+        "created_at": "2026-10-05T18:35:06.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.123"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 13,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001871"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000176",
+        "created_at": "2026-10-05T18:40:32.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.53"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 29,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001844"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000069",
+        "created_at": "2026-10-05T19:16:49.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.10.214"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 7,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001808"
+        ],
+        "runbook": "RB-05"
+      },
+      {
+        "alert_id": "ALR-20261005-000432",
+        "created_at": "2026-10-05T21:47:38.000Z",
+        "source_product": "WAF",
+        "rule_id": "UC-WEB-001",
+        "rule_name": "Ataque de inyección contra aplicación web",
+        "severity": "low",
+        "status": "new",
+        "mitre": {
+          "tactic": "Initial Access",
+          "technique_id": "T1190",
+          "technique": "Exploit Public-Facing Application"
+        },
+        "description": "Firma SQLi/XSS/LFI en el WAF.",
+        "entities": {
+          "ips": [
+            "198.18.11.245"
+          ],
+          "urls": [
+            "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+          ]
+        },
+        "evidence": {
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "hits": 27,
+          "action": "blocked"
+        },
+        "related_events": [
+          "WAF-0001909"
+        ],
+        "runbook": "RB-05"
+      }
+    ],
+    "evidence": [
+      {
+        "source": "waf",
+        "event_id": "WAF-0001904",
+        "timestamp": "2026-10-04T23:18:00.000Z",
+        "raw": {
+          "event_id": "WAF-0001904",
+          "timestamp": "2026-10-04T23:18:00.000Z",
+          "src_ip": "198.18.11.240",
+          "country": "RU",
+          "method": "GET",
+          "host": "www.tarvia.example",
+          "uri": "/cgi-bin/luci/;stok=/locale",
+          "status": 403,
+          "rule_id": "932150",
+          "rule_msg": "Remote Command Execution",
+          "action": "blocked",
+          "user_agent": "Mozilla/5.0 zgrab/0.x",
+          "bytes": 250
+        }
+      },
+      {
+        "source": "waf",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-5a6cf132fa3d0149",
+          "q": "WAF-0001904",
+          "desde": "2026-10-03T23:19:27.000Z",
+          "hasta": "2026-10-05T23:19:27.000Z",
+          "reason": "Recuperar el evento referenciado por la alerta (ID exacto).",
+          "count": 1,
+          "truncated": false,
+          "exact_event_found": true
+        }
+      },
+      {
+        "source": "waf",
+        "event_id": null,
+        "timestamp": null,
+        "raw": {
+          "kind": "query_summary",
+          "query_id": "QRY-72ba6ce5ea4019fd",
+          "q": "198.18.11.240",
+          "desde": "2026-10-03T23:19:27.000Z",
+          "hasta": "2026-10-05T23:19:27.000Z",
+          "reason": "Resolver check_waf_action_blocked_or_passed_to_backend sobre el identificador conocido; acotar resultado a esta fuente y ventana.",
+          "count": 1,
+          "truncated": false
+        }
+      }
+    ]
+  },
+  "trace": [
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "get_alert",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.727694Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "get_alert",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.731802Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "extract_entities",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.732248Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "extract_entities",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.732783Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "extract_indicators",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.733074Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "extract_indicators",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.733530Z",
+      "count": 2,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "load_runbook",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.733817Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "load_runbook",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.734081Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "get_strategy",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.734341Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "get_strategy",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.734615Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "build_plan",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.734903Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "build_plan",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.735190Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_context",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.735457Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_context",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.741920Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_intel",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.742401Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_intel",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.746441Z",
+      "count": 0,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "collect_related_events",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.746849Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "collect_related_events",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.775213Z",
+      "count": 1,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "find_related_alerts",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.775717Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "find_related_alerts",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.810654Z",
+      "count": 22,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.811237Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:08.811606Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "plan_searches",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:08.811898Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "plan_searches",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:16.425840Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "search_evidence",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:16.426386Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "search_evidence",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:16.467941Z",
+      "count": 1,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_discovered",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:16.468505Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "enrich_discovered",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:16.468966Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "investigation_coverage",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:16.469566Z",
+      "proposed": 2,
+      "accepted": 1,
+      "checks": [
+        {
+          "check": "check_waf_action_blocked_or_passed_to_backend",
+          "source": "waf",
+          "status": "searched",
+          "identifier": "198.18.11.240"
+        },
+        {
+          "check": "check_authorized_external_pentest_window_and_source",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_target_endpoint_existence_and_vulnerability_status",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_web_injection_payload_sqli_xss_lfi",
+          "status": "pending",
+          "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."
+        },
+        {
+          "check": "check_backend_exploitation_and_database_queries",
+          "source": "sql_audit",
+          "status": "pending",
+          "limitation": "Falta un identificador compatible o una ventana válida; no se inventa una consulta."
+        }
+      ]
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "analyze",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:16.469964Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "analyze",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.134964Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "decide_verdict",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.135588Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "decide_verdict",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.137227Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "calculate_severity",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.137728Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "calculate_severity",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.138105Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "decide_escalation",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.138427Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "decide_escalation",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.138734Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "recommend_actions",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.139035Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "recommend_actions",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.139389Z",
+      "count": 1,
+      "truncated": false
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "build_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.139703Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "build_ticket",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.140097Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "validate_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.140440Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "validate_ticket",
+      "status": "completed",
+      "timestamp": "2026-11-08T04:51:35.141336Z"
+    },
+    {
+      "alert_id": "ALR-20261005-000427",
+      "stage": "save_ticket",
+      "status": "started",
+      "timestamp": "2026-11-08T04:51:35.141745Z"
+    }
+  ],
+  "decision": null,
+  "note": null,
+  "review_timestamp": null,
+  "review": {
+    "decision": null,
+    "note": null,
+    "timestamp": null
+  }
+}

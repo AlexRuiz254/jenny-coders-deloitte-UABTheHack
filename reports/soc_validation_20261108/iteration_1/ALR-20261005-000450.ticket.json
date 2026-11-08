@@ -1,0 +1,130 @@
+{
+  "ticket_id": "TRIAGE-729a873f-2e96-4491-a14c-be55d056786d",
+  "alert_ids": [
+    "ALR-20261005-000450"
+  ],
+  "title": "Bucket tarvia-media-public expuesto vía PutBucketPolicy desde CI-RUNNER01 (terraform)",
+  "verdict": "needs_more_info",
+  "confidence": 0.44,
+  "severity": "high",
+  "summary": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5). A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01. La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión. Falta información para decidir malicia o autorización. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000185",
+      "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000181",
+      "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000182",
+      "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000183",
+      "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000184",
+      "finding": "La identidad svc_ecom_deploy y la clave AKIATARVIA7XQ2DEPLY solo se observan desde CI-RUNNER01 (172.16.10.21) en CloudTrail, con 72 llamadas (PutObject/GetObject/ListObjects/PutBucketPolicy) sobre tarvia-media-public entre 2026-10-04T22:33:10Z y 2026-10-06T08:54:31Z, sin orígenes externos ni user agent anómalos (aws-cli/2.17.0 y terraform/1.9.5)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000181",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000182",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000183",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000184",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000185",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000027",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000028",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000023",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000024",
+      "finding": "A las 09:05:00Z del 2026-10-05 se registran cinco PutBucketPolicy idénticos sobre tarvia-media-public aplicando 's3:GetObject para Principal * (imágenes de producto)' con user agent terraform/1.9.5, coordinados con los builds/deploy de los pipelines ecom-api, vela-assistant y wms-connector en CI-RUNNER01."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-35ef4cbca47a1b7f literal en cloudtrail: q='CT-0000185'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La alerta y sus related_alerts (ALR-20261005-000086, -000184, -000271, -000364) comparten entidad, bucket, identidad y cambio (PutBucketPolicy desde terraform en runner CI interno); son la misma operación replicada por regla, no fases distintas de una intrusión."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-0e9a6e34173ee1cb literal en cloudtrail: q='akiatarvia7xq2deply'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_access_key_baseline_usage_and_identity sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "cicd_builds",
+      "finding": "Consulta QRY-2e04fb95eacfda82 literal en cicd_builds: q='ci-runner01'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=31; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_known_terraform_pipeline_or_approved_change sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-618bcb765c5ad3dd literal en cloudtrail: q='tarvia-media-public'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_s3_bucket_acl_or_policy_public_exposure sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    }
+  ],
+  "recommended_actions": [],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "Escalado preventivo por riesgo de severidad high sin resolver (veredicto needs_more_info). Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+  },
+  "severity_rationale": "Severidad inicial: medium. Sin criticidad conocida de entidades afectadas: no se puede aplicar la matriz completa; se conserva la severidad inicial como base provisional. Ajuste +1 no acumulativo según analysis.signals por: ejecución o acceso confirmado. Severidad final: high.",
+  "affected": {
+    "cloud": [
+      {
+        "bucket": "tarvia-media-public",
+        "identity": "svc_ecom_deploy"
+      }
+    ],
+    "business_services": [
+      "Integración continua"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1537"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Existe un ticket de cambio Terraform aprobado que autorice el bucket público tarvia-media-public (Principal *) en la ventana 2026-10-05T09:05Z?, cambio pendiente de verificar: determina si la operación es autorización IaC legítima o un bucket realmente no autorizado.",
+    "¿La política pública se aplica a todo el bucket o solo al prefix de imágenes de producto?, afecta al alcance real de exposición y al nivel de riesgo del bucket.",
+    "¿Hay registros de descarga (GetObject) de objetos con datos personales desde el bucket desde el momento de la política pública?, determina si procede escalar al DPO según RB-06.",
+    "No se ha vinculado la actividad a un cambio autorizado verificable.",
+    "Propuesta benign_true_positive sin soporte suficiente o contradictoria; resolver antes de decidir."
+  ],
+  "triage_seconds": 62.73362859999179
+}

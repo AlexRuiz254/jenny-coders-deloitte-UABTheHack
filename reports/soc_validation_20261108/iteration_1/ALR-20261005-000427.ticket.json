@@ -1,0 +1,67 @@
+{
+  "ticket_id": "TRIAGE-e162b12c-8efc-4cbf-afe2-63211663a026",
+  "alert_ids": [
+    "ALR-20261005-000427"
+  ],
+  "title": "Escaneo de endpoint LuCI bloqueado por WAF",
+  "verdict": "true_positive",
+  "confidence": 0.8,
+  "severity": "medium",
+  "summary": "El WAF bloqueó (status 403, action blocked) una petición GET al uri /cgi-bin/luci/;stok=/locale desde src_ip 198.18.11.240 (country RU, user_agent zgrab/0.x) bajo la regla 932150 'Remote Command Execution' (UC-WEB-001), sin servir respuesta al backend. El evento WAF-0001904 fue recuperado exactamente en la ventana de la alerta (QRY-5a6cf132fa3d0149, count 1, truncated=false) y la actividad de la IP 198.18.11.240 quedó acotada a una sola ocurrencia bloqueada en su fuente y ventana (QRY-72ba6ce5ea4019fd, count 1, truncated=false). La alerta y el evento solo acreditan el escaneo/firma detectada (rule_msg 'Remote Command Execution'); la etiqueta genérica de la regla (UC-WEB-001, 'Ataque de inyección contra aplicación web') no prueba por sí sola SQLi, explotación exitosa ni web shell. Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "waf",
+      "event_id": "WAF-0001904",
+      "finding": "El WAF bloqueó (status 403, action blocked) una petición GET al uri /cgi-bin/luci/;stok=/locale desde src_ip 198.18.11.240 (country RU, user_agent zgrab/0.x) bajo la regla 932150 'Remote Command Execution' (UC-WEB-001), sin servir respuesta al backend."
+    },
+    {
+      "source": "waf",
+      "event_id": "WAF-0001904",
+      "finding": "La alerta y el evento solo acreditan el escaneo/firma detectada (rule_msg 'Remote Command Execution'); la etiqueta genérica de la regla (UC-WEB-001, 'Ataque de inyección contra aplicación web') no prueba por sí sola SQLi, explotación exitosa ni web shell."
+    },
+    {
+      "source": "waf",
+      "finding": "Consulta QRY-5a6cf132fa3d0149 literal en waf: q='WAF-0001904'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: El evento WAF-0001904 fue recuperado exactamente en la ventana de la alerta (QRY-5a6cf132fa3d0149, count 1, truncated=false) y la actividad de la IP 198.18.11.240 quedó acotada a una sola ocurrencia bloqueada en su fuente y ventana (QRY-72ba6ce5ea4019fd, count 1, truncated=false). La alerta y el evento solo acreditan el escaneo/firma detectada (rule_msg 'Remote Command Execution'); la etiqueta genérica de la regla (UC-WEB-001, 'Ataque de inyección contra aplicación web') no prueba por sí sola SQLi, explotación exitosa ni web shell."
+    },
+    {
+      "source": "waf",
+      "finding": "Consulta QRY-72ba6ce5ea4019fd literal en waf: q='198.18.11.240'; desde=2026-10-03T23:19:27.000Z; hasta=2026-10-05T23:19:27.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_waf_action_blocked_or_passed_to_backend sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: El evento WAF-0001904 fue recuperado exactamente en la ventana de la alerta (QRY-5a6cf132fa3d0149, count 1, truncated=false) y la actividad de la IP 198.18.11.240 quedó acotada a una sola ocurrencia bloqueada en su fuente y ventana (QRY-72ba6ce5ea4019fd, count 1, truncated=false). Los 21 alerts related comparten la misma URL y firma pero provienen de IPs distintas (p. ej. 198.18.11.120, 198.18.11.50, 198.18.11.108) y todas están 'blocked'; el mero hecho de compartir IP pública no demuestra coordinación ni una cadena de ataque."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "block_ioc",
+      "target": "198.18.11.240",
+      "requires_approval": false,
+      "justification": "Origen (RU) del escaneo bloqueado WAF-0001904 contra un endpoint público de la tienda online; contiene laIOC conocida del intento detectado para evitar reiteración. Permitida a N1 para un IOC concreto en proxy, correo o EDR."
+    }
+  ],
+  "escalation": {
+    "escalate": false,
+    "to": "",
+    "reason": "Veredicto validado: true_positive; severidad final: medium. No se cumplen criterios de escalado obligatorio según la política SOC ni se han comunicado señales específicas de compromiso. Mantener la investigación en N1."
+  },
+  "severity_rationale": "Severidad inicial: low. Mayor criticidad conocida de activos o servicios vinculados a la alerta: critical. Resultado de la matriz: medium. Sin ajuste: analysis.signals no indica factores de subida ni bloqueo completo. Severidad final: medium.",
+  "affected": {
+    "ips": [
+      "198.18.11.240"
+    ],
+    "urls": [
+      "https://www.tarvia.example/cgi-bin/luci/;stok=/locale"
+    ],
+    "business_services": [
+      "Tienda online y app"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1190"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Existe algún acceso correcto (200/sesión) contra el mismo uri en el backend tras los escaneos, dado que el 403 WAF no descarta explotación ni web shell en otros eventos no incluidos?",
+    "¿Constituyen los 21 escaneos bloqueados de IPs distintas una campaña coordinada verificable (nexo temporal/infraestructural) o solo ruido de escaneo generalizado, y afecta esto a severidad/escalado?",
+    "¿Existe continuación relevante del intento bloqueado? La cobertura disponible no permite aplicar la reducción de severidad por bloqueo sin actividad posterior."
+  ],
+  "triage_seconds": 32.1983831999969
+}

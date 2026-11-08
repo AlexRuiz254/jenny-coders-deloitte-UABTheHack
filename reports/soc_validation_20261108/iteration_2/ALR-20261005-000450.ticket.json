@@ -1,0 +1,141 @@
+{
+  "ticket_id": "TRIAGE-600307cd-1f15-4f23-9415-0d40e1a84b10",
+  "alert_ids": [
+    "ALR-20261005-000450"
+  ],
+  "title": "Bucket tarvia-media-public expuesto con política de lectura pública desde CI-RUNNER01",
+  "verdict": "true_positive",
+  "confidence": 0.74,
+  "severity": "high",
+  "summary": "La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z. A las 2026-10-05T09:05:00Z se aplicó un PutBucketPolicy sobre tarvia-media-public con política 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5 (eventos CT-0000181 a CT-0000185). La alerta ALR-20261005-000450 (UC-CLD-003) corresponde al evento CT-0000185 confirmado por la consulta QRY-35ef4cbca47a1b7f (exact_event_found=true, count=1, truncated=false). Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos.",
+  "evidence": [
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000127",
+      "finding": "La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000062",
+      "finding": "La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000121",
+      "finding": "La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000365",
+      "finding": "La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000297",
+      "finding": "La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000185",
+      "finding": "A las 2026-10-05T09:05:00Z se aplicó un PutBucketPolicy sobre tarvia-media-public con política 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5 (eventos CT-0000181 a CT-0000185)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000181",
+      "finding": "A las 2026-10-05T09:05:00Z se aplicó un PutBucketPolicy sobre tarvia-media-public con política 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5 (eventos CT-0000181 a CT-0000185)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000182",
+      "finding": "A las 2026-10-05T09:05:00Z se aplicó un PutBucketPolicy sobre tarvia-media-public con política 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5 (eventos CT-0000181 a CT-0000185)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000183",
+      "finding": "A las 2026-10-05T09:05:00Z se aplicó un PutBucketPolicy sobre tarvia-media-public con política 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5 (eventos CT-0000181 a CT-0000185)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000184",
+      "finding": "A las 2026-10-05T09:05:00Z se aplicó un PutBucketPolicy sobre tarvia-media-public con política 's3:GetObject para Principal * (imágenes de producto)' mediante terraform/1.9.5 (eventos CT-0000181 a CT-0000185)."
+    },
+    {
+      "source": "cloudtrail",
+      "event_id": "CT-0000185",
+      "finding": "La alerta ALR-20261005-000450 (UC-CLD-003) corresponde al evento CT-0000185 confirmado por la consulta QRY-35ef4cbca47a1b7f (exact_event_found=true, count=1, truncated=false)."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000007",
+      "finding": "El runner CI-RUNNER01 (asset A01175) ejecuta los builds de la tienda online y conserva la clave de despliegue AWS svc_ecom_deploy en variables de entorno; la actividad S3 coincide con los despliegues de pipelines ecom-api, ecom-frontend y wms-connector en la misma ventana."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000008",
+      "finding": "El runner CI-RUNNER01 (asset A01175) ejecuta los builds de la tienda online y conserva la clave de despliegue AWS svc_ecom_deploy en variables de entorno; la actividad S3 coincide con los despliegues de pipelines ecom-api, ecom-frontend y wms-connector en la misma ventana."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000023",
+      "finding": "El runner CI-RUNNER01 (asset A01175) ejecuta los builds de la tienda online y conserva la clave de despliegue AWS svc_ecom_deploy en variables de entorno; la actividad S3 coincide con los despliegues de pipelines ecom-api, ecom-frontend y wms-connector en la misma ventana."
+    },
+    {
+      "source": "cicd_builds",
+      "event_id": "CI-0000024",
+      "finding": "El runner CI-RUNNER01 (asset A01175) ejecuta los builds de la tienda online y conserva la clave de despliegue AWS svc_ecom_deploy en variables de entorno; la actividad S3 coincide con los despliegues de pipelines ecom-api, ecom-frontend y wms-connector en la misma ventana."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-35ef4cbca47a1b7f literal en cloudtrail: q='CT-0000185'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=1; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Recuperar el evento referenciado por la alerta (ID exacto). Evento exacto recuperado=True. Hallazgos relacionados: La alerta ALR-20261005-000450 (UC-CLD-003) corresponde al evento CT-0000185 confirmado por la consulta QRY-35ef4cbca47a1b7f (exact_event_found=true, count=1, truncated=false)."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-0e9a6e34173ee1cb literal en cloudtrail: q='akiatarvia7xq2deply'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_access_key_baseline_usage_and_identity sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: La cuenta svc_ecom_deploy (accessKeyId AKIATARVIA7XQ2DEPLY) realiza operaciones S3 (PutObject, GetObject, ListObjects) contra el bucket tarvia-media-public desde CI-RUNNER01 (172.16.10.21) durante la ventana 2026-10-04T22:33:10Z a 2026-10-06T08:54:31Z."
+    },
+    {
+      "source": "cicd_builds",
+      "finding": "Consulta QRY-2e04fb95eacfda82 literal en cicd_builds: q='ci-runner01'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=31; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_known_terraform_pipeline_or_approved_change sobre el identificador conocido; acotar resultado a esta fuente y ventana. Hallazgos relacionados: El runner CI-RUNNER01 (asset A01175) ejecuta los builds de la tienda online y conserva la clave de despliegue AWS svc_ecom_deploy en variables de entorno; la actividad S3 coincide con los despliegues de pipelines ecom-api, ecom-frontend y wms-connector en la misma ventana."
+    },
+    {
+      "source": "cloudtrail",
+      "finding": "Consulta QRY-618bcb765c5ad3dd literal en cloudtrail: q='tarvia-media-public'; desde=2026-10-04T09:07:34.000Z; hasta=2026-10-06T09:07:34.000Z; registros devueltos=72; truncated=False. Cobertura limitada a esa fuente, subcadena y ventana; no descarta compromiso. Si está truncada, el recuento no representa el total. Motivo: Resolver check_s3_bucket_acl_or_policy_public_exposure sobre el identificador conocido; acotar resultado a esta fuente y ventana."
+    }
+  ],
+  "recommended_actions": [
+    {
+      "action": "disable_access_key",
+      "target": "AKIATARVIA7XQ2DEPLY",
+      "requires_approval": true,
+      "justification": "Clave de servicio asociada a svc_ecom_deploy que ha aplicado una ACL/policy debucket pública sin autorización documentada; desactivarla evita la repetición del cambio hasta verificar si la clave fue usada con identidad legítima o fue comprometida. Requiere aprobación N2. Revisar con prioridad por severidad high."
+    }
+  ],
+  "escalation": {
+    "escalate": true,
+    "to": "N2",
+    "reason": "Escalado obligatorio a N2 según la política SOC. True positive de severidad high. Severidad final: high. Escalado a N2 en la misma jornada. Notificar al responsable SOC. SLA de triaje: 30 minutos."
+  },
+  "severity_rationale": "Severidad inicial: medium. Sin criticidad conocida de entidades afectadas: no se puede aplicar la matriz completa; se conserva la severidad inicial como base provisional. Ajuste +1 no acumulativo según analysis.signals por: ejecución o acceso confirmado. Severidad final: high.",
+  "affected": {
+    "cloud": [
+      {
+        "bucket": "tarvia-media-public",
+        "identity": "svc_ecom_deploy"
+      }
+    ],
+    "business_services": [
+      "Integración continua"
+    ]
+  },
+  "enrichment": [],
+  "mitre": [
+    "T1537"
+  ],
+  "executed_actions": [],
+  "open_questions": [
+    "¿Existe un change aprobado (CHG-…) o pipeline Terraform reconocido que autorice la ACL/policy de lectura pública en tarvia-media-public, o la alerta 'terraform desde runner CI interno' es únicamente un dato no confiable sin respaldo en context.changes? Afecta a la clasificación final y a la contención de la clave.",
+    "¿La identidad svc_ecom_deploy (AKIATARVIA7XQ2DEPLY) y la operación PutBucketPolicy corresponden a uso legítimo del runner o a un uso illegítimo/comprometido? Requiere validar el baseline de la clave en cloudtrail y la autorización del runner antes de concluir compromiso.",
+    "¿El bucket tarvia-media-public almacena datos personales (imágenes de producto con datos personales) que hagan notificable la exposición a la AEPD/CNPD en 72 h con intervención del DPO? Afecta a severidad y a la posible implicación del DPO según RB-06.",
+    "¿La policy pública ya está activa y ha sido consultada (GetObject a Principal *) por terceros, o la exposición se detectó antes de explotación? Afecta a si la exposición ya produjo salida de datos o solo está pendiente."
+  ],
+  "triage_seconds": 36.485513199993875
+}
