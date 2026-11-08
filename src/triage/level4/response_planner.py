@@ -54,6 +54,15 @@ class ContainmentProposal(BaseModel):
     operational_impact: str
     risks: list[str]
 
+    @property
+    def ticket_id(self) -> str:
+        """Nombre utilizado por el ejecutor/API existentes para el incidente."""
+        return self.incident_id
+
+    @property
+    def content_hash(self) -> str:
+        return self.proposal_id
+
     @staticmethod
     def identity(payload: dict) -> str:
         data = {key: value for key, value in payload.items() if key != "proposal_id"}
