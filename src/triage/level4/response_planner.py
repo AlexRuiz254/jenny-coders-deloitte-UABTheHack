@@ -61,7 +61,10 @@ class ContainmentProposal(BaseModel):
 
     @property
     def content_hash(self) -> str:
-        return self.proposal_id
+        # Fórmula real de ApprovalService.request_approval(). proposal_id ya
+        # vincula el informe, política, evidencias y snapshot completos de N4.
+        raw = f"{self.proposal_id}:{(self.action or '').strip().lower()}:{self.target.strip().lower()}:{self.justification.strip()}"
+        return sha256(raw.encode()).hexdigest()[:16]
 
     @staticmethod
     def identity(payload: dict) -> str:

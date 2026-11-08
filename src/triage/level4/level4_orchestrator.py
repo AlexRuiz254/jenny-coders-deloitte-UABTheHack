@@ -1,9 +1,10 @@
-"""Coordinar N4 sin endpoints, aprobaciones implícitas ni memoria duradera ficticia.
+"""Coordinar N4 sin aprobaciones implícitas ni memoria duradera ficticia.
 
-Contratos provisionales: ApprovalService debe autenticar la intervención humana,
-sus roles sobre el objetivo y la vigencia de la autorización; un token /approvals
-de la API simulada, por sí solo, NO cumple ese contrato. ContainmentExecutor debe
-revalidar política/objetivo y ejecutar con idempotency_key=proposal.proposal_id.
+with_soc_services conecta ApprovalService y ContainmentExecutor existentes.
+El cliente inyecta verify_actor para autenticar la sesión y su ámbito sobre el
+objetivo; los roles se obtienen del registro de ApprovalPolicy. SOCTokenBridge
+registra la autorización en la API simulada sin sustituir TokenService. Un token
+/approvals, por sí solo, no acredita identidad, permisos ni decisión humana.
 
 report_loader(id) recupera IncidentReport ya guardado. SQLiteResponseStore permite
 importarlo y recuperarlo sin ejecutar N1/N2/N3. La preparación funciona sin
@@ -19,11 +20,13 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import closing
-from datetime import datetime, timezone
+from contextvars import ContextVar
+from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 import json
 from pathlib import Path
 import sqlite3
+import threading
 from typing import Any, Literal, Protocol
 from urllib.parse import urlsplit
 
@@ -65,6 +68,7 @@ class ExecutionAuthorization(ApprovalRecord):
     expires_at: datetime
     token: SecretStr
     approved_by: list[str] = Field(default_factory=list)
+    content_digest: str | None = None
 
     @property
     def approval_token(self) -> str:
@@ -77,7 +81,7 @@ class ExecutionAuthorization(ApprovalRecord):
 
     @property
     def proposal_hash(self) -> str:
-        return self.proposal_id
+        return self.content_digest or self.proposal_id
 
 
 class ActionResult(BaseModel):
@@ -279,7 +283,271 @@ def _check_local_soc_url(base_url: str) -> None:
         raise PermissionError("N4 solo permite la API SOC simulada por HTTP en loopback")
 
 
+class SOCTokenBridge:
+    """Traduce tokens SOC a los tokens del TokenService real, sin sustituir su validación.
+
+    Solo emite dentro de approve() de Persona 2 después de una decisión explícita
+    verificada. No se llama /approvals durante prepare(). El mapa, como el
+    TokenService original, vive en memoria: tras reinicio falla cerrado.
+    """
+    def __init__(self, crypto: Any, repository: Any, api_client: Any) -> None:
+        _check_local_soc_url(api_client.base_url)
+        if api_client.session.trust_env or api_client.session.max_redirects != 0:
+            raise PermissionError("La sesión SOC requiere trust_env=False y max_redirects=0")
+        self.crypto, self.repository, self.api_client = crypto, repository, api_client
+        self.default_ttl_seconds = crypto.default_ttl_seconds
+        self._context = ContextVar("n4_explicit_decision", default=None)
+        self._tokens: dict[str, tuple[str, datetime]] = {}
+        self._lock = threading.RLock()
+
+    def for_decision(self, decision: HumanDecision, proposal_id: str, operation: Callable) -> Any:
+        context = self._context.set((decision.actor, decision.reason, proposal_id))
+        try:
+            return operation()
+        finally:
+            self._context.reset(context)
+
+    def generate_token(self, approval_id: str, proposal_id: str, proposal_hash: str,
+                       ttl_seconds: int | None = None) -> str:
+        context = self._context.get()
+        if context is None or context[2] != proposal_id:
+            raise PermissionError("No hay una decisión explícita verificada para emitir el token")
+        # El cliente/sesión son mutables: comprobar también al emitir, no solo
+        # en el constructor, antes de registrar una autorización en la API.
+        _check_local_soc_url(self.api_client.base_url)
+        if self.api_client.session.trust_env or self.api_client.session.max_redirects != 0:
+            raise PermissionError("La sesión SOC requiere trust_env=False y max_redirects=0")
+        approval = self.repository.get(approval_id)
+        if approval is None or approval.proposal_id != proposal_id or approval.proposal_hash != proposal_hash:
+            raise PermissionError("La solicitud persistida no corresponde al token solicitado")
+        ttl = ttl_seconds if ttl_seconds is not None else self.default_ttl_seconds
+        if ttl <= 0:
+            raise ValueError("La vigencia del token debe ser positiva")
+        # Límite conservador, anterior al instante de emisión del TokenService.
+        expires = datetime.now(timezone.utc) + timedelta(seconds=ttl)
+        internal = self.crypto.generate_token(approval_id, proposal_id, proposal_hash, ttl_seconds=ttl)
+        try:
+            response = self.api_client.session.post(self.api_client.base_url + "/approvals", json={
+                "action": approval.action, "target": approval.target, "approver": context[0], "reason": context[1],
+            }, timeout=self.api_client.timeout, allow_redirects=False)
+            if response.status_code != 200:
+                raise RuntimeError(f"La API SOC rechazó registrar la autorización: HTTP {response.status_code}")
+            data = response.json()
+            token = data.get("approval_token", "")
+            if (not isinstance(token, str) or not token.startswith("APR-")
+                    or data.get("action") != approval.action or data.get("target") != approval.target
+                    or data.get("approver") != context[0]):
+                raise ValueError("La API SOC devolvió una autorización de otro alcance o malformada")
+        except Exception:
+            self.crypto.revoke_token(internal)
+            raise
+        with self._lock:
+            self._tokens[token] = (internal, expires)
+        return token
+
+    def expiry(self, token: str) -> datetime:
+        with self._lock:
+            if token not in self._tokens:
+                raise PermissionError("Token desconocido: la sesión de tokens no se conserva tras reinicio")
+            return self._tokens[token][1]
+
+    def validate_token(self, token: str, approval_id: str, proposal_id: str, proposal_hash: str) -> bool:
+        with self._lock:
+            entry = self._tokens.get(token)
+            return bool(entry and entry[1] > datetime.now(timezone.utc) and self.crypto.validate_token(
+                entry[0], approval_id, proposal_id, proposal_hash))
+
+    def consume_token(self, token: str) -> bool:
+        with self._lock:
+            entry = self._tokens.get(token)
+            return bool(entry and self.crypto.consume_token(entry[0]))
+
+    def revoke_token(self, token: str) -> bool:
+        with self._lock:
+            entry = self._tokens.get(token)
+            return bool(entry and self.crypto.revoke_token(entry[0]))
+
+
+def _covered_roles(roles: list[str]) -> set[str]:
+    covered = set()
+    for role in roles:
+        if role.upper() in {"N2", "SOC_LEAD", "CISO"}:
+            covered.update(("N1", "N2"))
+        elif role.upper() == "N1":
+            covered.add("N1")
+        elif role.casefold() in {"business", "business_owner"}:
+            covered.add("business_owner")
+        elif role.casefold() == "service_owner":
+            covered.add("service_owner")
+    return covered
+
+
+class _ProposalPolicyBridge:
+    """Añade requisitos de CMDB/N4 a la política real; nunca elimina los suyos."""
+    def __init__(self, policy: Any) -> None:
+        self.policy = policy
+        self._required: dict[tuple[str, str], set[str]] = {}
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.policy, name)
+
+    def register(self, proposal: ContainmentProposal) -> None:
+        proposal.verify_identity()
+        roles = {"business" if role == "business_owner" else role for role in proposal.required_approvals}
+        self._required.setdefault((proposal.action, proposal.target.casefold()), set()).update(roles)
+
+    def get_required_approvers(self, action: str, target: str) -> list[str]:
+        return sorted(set(self.policy.get_required_approvers(action, target))
+                      | self._required.get((action.strip().lower(), target.casefold()), set()))
+
+
+class NativeApprovalAdapter:
+    """Adapta las firmas reales de Persona 2, con identidad verificada externamente.
+
+    verify_actor(decision, proposal) comprueba la sesión autenticada y su ámbito
+    sobre el objetivo (especialmente propietarios de negocio/servicio), sin fiarse
+    del nombre declarado. Las pruebas inyectan un verificador de ensayo explícito.
+    Los roles salen solo del registro configurado: nunca del cliente ni de los
+    heurísticos por subcadena de ApprovalPolicy.resolve_role().
+    """
+    def __init__(self, service: Any, store: ResponseStore,
+                 verify_actor: Callable[[HumanDecision, ContainmentProposal], bool], requester_id: str = "soc_n4_planner") -> None:
+        if not callable(verify_actor):
+            raise TypeError("Se requiere un verificador de identidad de la sesión humana")
+        self.service, self.store = service, store
+        self.verify_actor, self.requester_id = verify_actor, requester_id
+        self._lock = threading.RLock()
+
+    def _binding(self, proposal: ContainmentProposal, approval: Any) -> None:
+        proposal.verify_identity()
+        if approval is None:
+            raise PermissionError("No existe la solicitud de aprobación persistida")
+        if (approval.proposal_id, approval.ticket_id, approval.action, approval.target, approval.proposal_hash) != (
+            proposal.proposal_id, proposal.incident_id, proposal.action, proposal.target, proposal.content_hash
+        ):
+            raise PermissionError("La autorización persistida no corresponde al incidente/acción/objetivo/contenido")
+
+    def _roles(self, approval: Any) -> set[str]:
+        roles = []
+        for vote in approval.approvals_received:
+            trusted = self.service.policy.user_roles.get(vote.get("reviewer_id", "").casefold())
+            if trusted is None or trusted.casefold() != vote.get("reviewer_role", "").casefold():
+                raise PermissionError("Un voto no coincide con el registro vigente de roles")
+            roles.append(trusted)
+        return _covered_roles(roles)
+
+    @staticmethod
+    def _check_recorded_votes(approval: Any, state: ProposalState | None) -> None:
+        events = state.history if state is not None else []
+        for vote in approval.approvals_received:
+            if not any(event.get("event") == "human_decision" and event.get("approved") is True
+                       and event.get("actor", "").casefold() == vote.get("reviewer_id", "").casefold()
+                       and event.get("reason") == vote.get("reason") for event in events):
+                raise PermissionError("Hay votos sin su decisión N4 auditada; requieren conciliación")
+
+    def _record(self, proposal: ContainmentProposal, approval: Any, ids: list[str], verified: bool) -> ApprovalRecord:
+        self._binding(proposal, approval)
+        roles = self._roles(approval)
+        required = set(proposal.required_approvals) | _covered_roles(approval.required_approvers)
+        if approval.status == "approved" and not required <= roles:
+            raise PermissionError("Persona 2 no ha obtenido todos los aprobadores exigidos por N4")
+        return ApprovalRecord(
+            approval_id=approval.approval_id, proposal_id=proposal.proposal_id, incident_id=proposal.incident_id,
+            action=proposal.action, target=proposal.target,
+            status="rejected" if approval.status in {"rejected", "revoked", "expired"} else approval.status,
+            human_verified=verified, decision_ids=ids, approved_roles=sorted(roles),
+            expires_at=self.service.token_service.expiry(approval.approval_token) if approval.status == "approved" else None,
+        )
+
+    def request(self, proposal: ContainmentProposal) -> ApprovalRecord:
+        with self._lock:
+            if isinstance(self.service.policy, _ProposalPolicyBridge):
+                self.service.policy.register(proposal)
+            existing = self.service.get_approvals_for_proposal(proposal.proposal_id)
+            if any(item.status != "pending" for item in existing):
+                raise PermissionError("Hay decisiones externas sin historial N4 asociado; requieren conciliación")
+            approval = self.service.request_approval(proposal, requester_id=self.requester_id)
+            self._binding(proposal, approval)
+            if approval.approvals_received:
+                raise PermissionError("No se adoptan votos externos sin sus eventos humanos N4")
+            return self._record(proposal, approval, [], False)
+
+    def record_decision(self, proposal: ContainmentProposal, decision: HumanDecision) -> ApprovalRecord:
+        with self._lock:
+            if not proposal.executable or proposal.action is None:
+                raise PermissionError("Esta propuesta solo permite revisión/escalado manual, no aprobación ejecutable")
+            if self.verify_actor(decision, proposal) is not True:
+                raise PermissionError("La identidad humana no ha sido verificada")
+            role = self.service.policy.user_roles.get(decision.actor.casefold())
+            if role is None:
+                raise PermissionError("El revisor no figura en el registro autorizado; no se infiere su rol del nombre")
+            state = self.store.get(proposal.proposal_id)
+            receipt = state.approval if state else None
+            if receipt is None:
+                receipt = self.request(proposal)
+            approval = self.service.get_approval(receipt.approval_id)
+            self._binding(proposal, approval)
+            self._check_recorded_votes(approval, state)
+            ids = list(receipt.decision_ids)
+            if decision.decision_id not in ids:
+                ids.append(decision.decision_id)
+            if decision.approved:
+                required = _covered_roles(approval.required_approvers)
+                if not set(proposal.required_approvals) <= required:
+                    raise PermissionError("ApprovalPolicy omite aprobadores de CMDB/N4; debe corregirse en Persona 2")
+                if role.casefold() == "ciso" and required - {"N1", "N2"}:
+                    raise PermissionError("El atajo CISO de Persona 2 no sustituye la aprobación de negocio/servicio")
+                if not isinstance(self.service.token_service, SOCTokenBridge):
+                    raise RuntimeError("Inyectar SOCTokenBridge para emitir tokens que reconozca la API SOC")
+                approval = self.service.token_service.for_decision(decision, proposal.proposal_id, lambda:
+                    self.service.approve(approval.approval_id, decision.actor, decision.reason, reviewer_role=role))
+            elif approval.status == "approved":
+                if not self.service.policy.is_reviewer_authorized(decision.actor, role, proposal.action,
+                                                                  proposal.target, approval.required_approvers):
+                    raise PermissionError("El revisor no está autorizado para revocar")
+                approval = self.service.revoke(approval.approval_id, decision.actor, decision.reason)
+            else:
+                approval = self.service.reject(approval.approval_id, decision.actor, decision.reason, reviewer_role=role)
+            return self._record(proposal, approval, ids, True)
+
+    def validate(self, proposal: ContainmentProposal, approval_id: str) -> ExecutionAuthorization:
+        approval = self.service.get_approval(approval_id)
+        if approval is None or approval.status != "approved":
+            raise PermissionError("La solicitud no está aprobada o ha sido revocada")
+        self._binding(proposal, approval)
+        if not self.service.validate_approval(proposal, approval):
+            raise PermissionError("ApprovalService ha rechazado la autorización o su token")
+        state = self.store.get(proposal.proposal_id)
+        if state is None or state.approval is None or state.approval.approval_id != approval_id:
+            raise PermissionError("No existe un recibo N4 de las decisiones humanas de esta aprobación")
+        self._check_recorded_votes(approval, state)
+        receipt = self._record(proposal, approval, state.approval.decision_ids, True)
+        return ExecutionAuthorization(**receipt.model_dump(), token=SecretStr(approval.approval_token),
+                                      content_digest=approval.proposal_hash)
+
+    def consume(self, authorization: ExecutionAuthorization) -> None:
+        if not self.service.token_service.consume_token(authorization.approval_token):
+            raise RuntimeError("La acción se ejecutó, pero no se pudo consumir su token; conciliar manualmente")
+
+
 class Level4Orchestrator:
+    @classmethod
+    def with_soc_services(cls, *, planner: Planner, store: SQLiteResponseStore, approval_service: Any,
+                          api_client: Any, verify_actor: Callable[[HumanDecision, ContainmentProposal], bool],
+                          requester_id: str = "soc_n4_planner") -> Level4Orchestrator:
+        """Cablear los servicios existentes, sin reemplazar validaciones ni ejecutar N3."""
+        from src.triage.level4.containment_executor import ContainmentExecutor as SOCExecutor
+        if not isinstance(approval_service.token_service, SOCTokenBridge):
+            approval_service.token_service = SOCTokenBridge(approval_service.token_service,
+                                                           approval_service.repository, api_client)
+        elif approval_service.token_service.api_client.base_url != api_client.base_url:
+            raise ValueError("No se pueden trasladar autorizaciones a otra API SOC")
+        if not isinstance(approval_service.policy, _ProposalPolicyBridge):
+            approval_service.policy = _ProposalPolicyBridge(approval_service.policy)
+        adapter = NativeApprovalAdapter(approval_service, store, verify_actor, requester_id)
+        return cls(report_loader=store.load_report, planner=planner, approvals=adapter,
+                   executor=SOCExecutor(api_client), store=store)
+
     def __init__(self, *, report_loader: Callable[[str], IncidentReport | dict | None],
                  planner: Planner, approvals: ApprovalService | None = None, executor: ContainmentExecutor | None = None,
                  store: ResponseStore, clock: Callable[[], datetime] | None = None) -> None:
@@ -313,6 +581,7 @@ class Level4Orchestrator:
                 and set(checked.decision_ids) == set(authorization.decision_ids)
                 and set(checked.approved_roles) == set(authorization.approved_roles)
                 and checked.token.get_secret_value() == authorization.token.get_secret_value()
+                and (checked.content_digest is None or checked.content_digest == authorization.content_digest)
                 and (not checked.approved_by or set(checked.approved_by) == set(authorization.approved_by)))
 
     @staticmethod
@@ -412,6 +681,9 @@ class Level4Orchestrator:
             )))
             if state.proposal != proposal:
                 raise ValueError("La propuesta ya registrada tiene otro contenido")
+            if isinstance(self.approvals, NativeApprovalAdapter) and proposal.executable and state.approval is None:
+                receipt = self.approvals.request(proposal)
+                state = self._save(state, self._event("approval_requested"), approval=receipt)
             result.append(state.proposal.model_copy(deep=True))
         return result
 
@@ -437,6 +709,13 @@ class Level4Orchestrator:
         decision = _model(HumanDecision, decision)
         if not all(value.strip() for value in (decision.actor, decision.decision_id, decision.reason)):
             raise ValueError("La decisión requiere identificador, actor y motivo explícitos")
+        for event in state.history:
+            if event.get("event") == "human_decision" and event.get("decision_id") == decision.decision_id:
+                if (event.get("actor"), event.get("approved"), event.get("reason")) != (
+                    decision.actor, decision.approved, decision.reason
+                ):
+                    raise ValueError("decision_id ya utilizado con otro contenido")
+                return state
         try:
             record = _model(ApprovalRecord, self.approvals.record_decision(
                 state.proposal.model_copy(deep=True), decision.model_copy(deep=True)))
@@ -473,6 +752,8 @@ class Level4Orchestrator:
                     or set(authorization.decision_ids) != set(state.approval.decision_ids)
                     or not authorization.token.get_secret_value().strip()):
                 raise PermissionError("Autorización distinta de las decisiones registradas o token vacío")
+            if authorization.content_digest is not None and authorization.content_digest != proposal.content_hash:
+                raise PermissionError("La autorización no corresponde al contenido aprobado")
             actors = {entry["decision_id"]: entry["actor"] for entry in state.history
                       if entry.get("event") == "human_decision" and entry.get("approved") is True}
             if not set(authorization.decision_ids) <= actors.keys():
@@ -480,7 +761,8 @@ class Level4Orchestrator:
             approved_by = sorted({actors[key] for key in authorization.decision_ids})
             if authorization.approved_by and set(authorization.approved_by) != set(approved_by):
                 raise PermissionError("Los aprobadores no corresponden a las decisiones registradas")
-            authorization = authorization.model_copy(update={"approved_by": approved_by})
+            authorization = authorization.model_copy(update={"approved_by": approved_by,
+                                                               "content_digest": proposal.content_hash})
         except Exception as exc:
             self._failure(state, "approval_validation", exc)
             raise
@@ -511,24 +793,36 @@ class Level4Orchestrator:
             self._save(state, self._event("execution_failed"), status="failed", result=result,
                        last_error="El ejecutor ha comunicado un fallo; requiere conciliación manual")
             raise RuntimeError("El ejecutor ha comunicado un fallo; requiere conciliación manual")
+        if isinstance(self.approvals, NativeApprovalAdapter):
+            try:
+                self.approvals.consume(authorization)
+            except Exception as exc:
+                self._failure(state, "token_consumption", exc, status="failed", result=result)
+                raise
         self._save(state, self._event("execution_succeeded"), status="succeeded", result=result, last_error=None)
         return result.model_copy(deep=True)
 
 
 def _main() -> None:
-    """Demo de preparación persistente; no ofrece aprobación/ejecución sin Persona 2."""
+    """Preparar o demostrar una decisión de ensayo explícita con los servicios reales."""
     import argparse
     from src.data.reference_repository import ReferenceRepository
     from src.data.soc_api_client import SOCAPIClient
     from src.triage.level4.response_planner import ResponsePlanner
 
     root = Path(__file__).resolve().parents[3]
-    parser = argparse.ArgumentParser(description="Preparar propuestas N4 desde un informe N3 JSON ya generado; sin ejecutar contención")
+    parser = argparse.ArgumentParser(description="Preparación N4; contención de ensayo solo con --demo-decision y una propuesta exacta")
     parser.add_argument("--report", required=True, type=Path, help="JSON N3 exportado con to_dict()/exclude_none=True")
     parser.add_argument("--db-path", required=True, type=Path, help="SQLite de estados, auditoría e informes N4")
     parser.add_argument("--api-url", default="http://127.0.0.1:8000")
     parser.add_argument("--dataset-root", type=Path, default=root / "RepositoriDeloitte")
+    parser.add_argument("--demo-decision", choices=("approve", "reject"),
+                        help="ENSAYO: identidad simulada; registra esta decisión explícita y ejecuta solo si queda aprobada")
+    parser.add_argument("--proposal-id", help="Propuesta exacta sobre la que decidir en el ensayo")
+    parser.add_argument("--demo-reviewer", default="analyst_n2", help="Identidad de ensayo del registro configurado de Tarvia")
     args = parser.parse_args()
+    if args.demo_decision and not args.proposal_id:
+        parser.error("--demo-decision requiere --proposal-id; nunca se aprueban propuestas en bloque")
     _check_local_soc_url(args.api_url)
     report = validate_report(json.loads(args.report.read_text(encoding="utf-8-sig")))
     store = SQLiteResponseStore(args.db_path)
@@ -536,15 +830,46 @@ def _main() -> None:
     api = SOCAPIClient(args.api_url)
     api.session.trust_env = False
     api.session.max_redirects = 0
+    containment_client = None
     try:
         planner = ResponsePlanner(api=api, references=ReferenceRepository(args.dataset_root))
-        service = Level4Orchestrator(report_loader=store.load_report, planner=planner, store=store)
+        if args.demo_decision:
+            from src.triage.level4.approval_repository import ApprovalRepository
+            from src.triage.level4.approval_service import ApprovalService as RealApprovalService
+            from src.triage.level4.containment_api_client import ContainmentAPIClient
+            import requests
+            session = requests.Session()
+            session.trust_env = False
+            session.max_redirects = 0
+            containment_client = ContainmentAPIClient(args.api_url, session=session)
+            approvals = RealApprovalService(repository=ApprovalRepository(args.db_path))
+            service = Level4Orchestrator.with_soc_services(
+                planner=planner, store=store, approval_service=approvals, api_client=containment_client,
+                verify_actor=lambda decision, proposal: decision.actor == args.demo_reviewer,
+            )
+        else:
+            service = Level4Orchestrator(report_loader=store.load_report, planner=planner, store=store)
         proposals = service.prepare(report.incident_id)
-        print(json.dumps({"incident_id": report.incident_id, "mode": "prepare_only",
+        if args.demo_decision:
+            if args.proposal_id not in {proposal.proposal_id for proposal in proposals}:
+                raise ValueError("La propuesta seleccionada no pertenece al informe actual")
+            state = service.get_state(args.proposal_id)
+            if state.status != "succeeded" or args.demo_decision == "reject":
+                decision_id = "DEMO-" + sha256((args.proposal_id + args.demo_reviewer + args.demo_decision).encode()).hexdigest()[:24]
+                state = service.record_decision(args.proposal_id, HumanDecision(
+                    decision_id=decision_id, actor=args.demo_reviewer, approved=args.demo_decision == "approve",
+                    reason="ENSAYO EXPLÍCITO: identidad simulada, no autenticación humana real",
+                ))
+                if args.demo_decision == "approve" and state.status == "approved":
+                    service.execute_approved(args.proposal_id)
+        print(json.dumps({"incident_id": report.incident_id,
+                          "mode": "DEMO_SIMULATED_IDENTITY" if args.demo_decision else "prepare_only",
                           "states": [service.get_state(p.proposal_id).model_dump(mode="json") for p in proposals]},
                          ensure_ascii=False, indent=2))
     finally:
         api.close()
+        if containment_client is not None:
+            containment_client.close()
 
 
 if __name__ == "__main__":
