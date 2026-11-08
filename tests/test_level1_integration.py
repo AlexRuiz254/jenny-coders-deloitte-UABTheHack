@@ -73,7 +73,8 @@ class ScriptedLLM:
             return SearchPlan(searches=self.searches)
         evidence = json.loads(re.search(r"<untrusted_evidence>\n(.*?)\n</untrusted_evidence>", prompt, re.S)[1])
         context = json.loads(re.search(r"<untrusted_context>\n(.*?)\n</untrusted_context>", prompt, re.S)[1])
-        refs = [e["event_id"] for e in evidence if e.get("event_id") and e["source"] != "changes"][:1]
+        alert = json.loads(re.search(r"<untrusted_alert>\n(.*?)\n</untrusted_alert>", prompt, re.S)[1])
+        refs = [e["event_id"] for e in evidence if e.get("event_id") in alert.get("related_events", [])][:1]
         if self.mode == "authorized":
             refs.append(next(c["id"] for c in context["changes"] if c["id"] == "CHG-2026-1031"))
         insufficient = self.mode == "insufficient"
@@ -102,7 +103,8 @@ def setup_service(tmp_path, transport):
 
 @pytest.mark.parametrize("mode,alert_id,expected", [
     ("malicious", MALICIOUS, "true_positive"),
-    ("authorized", AUTHORIZED, "benign_true_positive"),
+    # SYSTEM y CcmExec son compatibles con SCCM, pero no acreditan svc_sccm.
+    ("authorized", AUTHORIZED, "needs_more_info"),
     ("insufficient", AUTHORIZED, "needs_more_info"),
 ])
 def test_end_to_end_verdicts_and_schema(setup_service, mode, alert_id, expected):
@@ -120,14 +122,12 @@ def test_end_to_end_verdicts_and_schema(setup_service, mode, alert_id, expected)
     assert record["trace"]
     if mode == "authorized":
         assert any(e.event_id == "CHG-2026-1031" for e in ticket.evidence)
-        assert ticket.severity in {"informational", "low"}
-        assert not ticket.escalation.escalate
-        assert not any("CHG-2026-1031" in q for q in ticket.open_questions)
+        assert any("cuenta ejecutora" in q for q in ticket.open_questions)
     elif mode == "malicious":
         assert ticket.escalation.escalate
         assert ticket.severity in {"high", "critical"}
     else:
-        assert ticket.open_questions and not ticket.evidence
+        assert ticket.open_questions and not any(e.event_id for e in ticket.evidence)
 
 
 def test_persistence_review_idempotence_and_explicit_reprocess(setup_service):
@@ -165,7 +165,7 @@ def test_search_windows_and_truncation(setup_service, monkeypatch):
     def search(source, **kwargs):
         queries.append(kwargs)
         result = original(source, **kwargs)
-        if kwargs["q"] == "WS-BCN-1174":
+        if kwargs["q"].casefold() == "ws-bcn-1174":
             return {**result, "truncated": True}
         return result
     monkeypatch.setattr(api, "search_logs", search)
@@ -194,7 +194,7 @@ def test_import_alerts_and_tickets(setup_service, official_api):
     assert api.get_alert(alert["alert_id"]) == alert
     service.investigator.llm = ScriptedLLM("authorized")
     ticket = service.run(alert["alert_id"])
-    assert ticket.verdict == "benign_true_positive"
+    assert ticket.verdict == "needs_more_info"
     existing = import_records(json.dumps(official_api.get_alert(AUTHORIZED)).encode(), kind="alerts", jsonl=False,
                               api=api, store=store, references=service.references)
     assert existing["duplicates"] == 1
@@ -289,10 +289,11 @@ def test_imported_alert_pagination_includes_last_page(setup_service, official_ap
 
 def test_change_calendar_uses_madrid_timezone_at_boundary(setup_service, monkeypatch):
     api, store, service = setup_service
-    monkeypatch.setattr(api, "get_changes", lambda: [{"id": "CHG-BOUNDARY", "inicio": "2026-10-08 08:00", "fin": "2026-10-08 09:00"}])
+    monkeypatch.setattr(api, "get_changes", lambda: [{"id": "CHG-BOUNDARY", "inicio": "2026-10-08 08:00", "fin": "2026-10-08 09:00", "titulo": "Inventario SCCM", "detalle": "svc_sccm ejecuta SCCM", "alcance": "Todos los puestos"}])
     from src.triage.models import EntityKeys
-    inside = service.context.enrich({"created_at": "2026-10-08T06:30:00Z"}, EntityKeys())
-    outside = service.context.enrich({"created_at": "2026-10-08T08:30:00Z"}, EntityKeys())
+    alert = {"source_product": "EDR", "rule_name": "Inventario SCCM", "entities": {"hosts": ["WS-BCN-1174"], "users": ["svc_sccm"]}}
+    inside = service.context.enrich({**alert, "created_at": "2026-10-08T06:30:00Z"}, EntityKeys())
+    outside = service.context.enrich({**alert, "created_at": "2026-10-08T08:30:00Z"}, EntityKeys())
     assert inside.changes and not outside.changes
 
 

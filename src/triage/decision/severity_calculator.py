@@ -1,6 +1,8 @@
 """Cálculo determinista según el apartado 2 de politica_soc.md."""
 
 from typing import cast
+from urllib.parse import urlsplit
+from src.triage.investigation.context_enricher import ContextEnricher
 
 from src.triage.models import (
     RawAlert,
@@ -54,7 +56,7 @@ class SeverityCalculator:
         base_severity = rule_severity
         if criticality is not None:
             base_severity = SEVERITY_MATRIX[rule_severity][criticality]
-            reasons.append(f"Mayor criticidad conocida de los activos afectados: {criticality}.")
+            reasons.append(f"Mayor criticidad conocida de activos o servicios vinculados a la alerta: {criticality}.")
             reasons.append(f"Resultado de la matriz: {base_severity}.")
         else:
             reasons.append(
@@ -96,6 +98,24 @@ class SeverityCalculator:
                 value = asset.get("criticality")
                 criticality = CRITICALITIES.get(value.strip().casefold()) if isinstance(value, str) else None
                 if criticality is not None:
+                    known.append(criticality)
+        domains = identifiers(entities.get("domains"))
+        for url in entities.get("urls", []):
+            value = url.get("url") if isinstance(url, dict) else url
+            try:
+                if isinstance(value, str) and urlsplit(value).hostname:
+                    domains.add(urlsplit(value).hostname.casefold())
+            except ValueError:
+                continue
+        linked_names = {str(a.get("business_service", "")).split(" (≈", 1)[0].casefold()
+                        for a in context.assets if affected_ids & identifiers([a])}
+        if "www.tarvia.example" in domains and alert.get("source_product") in {"WAF", "ECOM"}:
+            linked_names.add("tienda online y app")
+        for service in context.services:
+            if (str(service.get("servicio", "")).casefold() in linked_names
+                    or affected_ids and ContextEnricher._scope_matches(service.get("activos", ""), list(affected_ids))):
+                criticality = CRITICALITIES.get(str(service.get("criticidad", "")).casefold())
+                if criticality:
                     known.append(criticality)
         return max(known, key=SEVERITY_LEVELS.index, default=None)
 

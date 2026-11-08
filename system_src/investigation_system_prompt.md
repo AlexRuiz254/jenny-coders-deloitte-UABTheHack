@@ -56,6 +56,12 @@ Aplica siempre estas reglas operativas de Tarvia Group al contrastar las evidenc
 - Si las evidencias iniciales ya responden a todas las comprobaciones del runbook, devuelve `{"searches": []}`.
 
 ### Fase 2: Análisis y Propuesta (`Analysis`)
+- Los agregados de `untrusted_evidence_aggregates` se calculan sobre todos los registros recibidos. La muestra detallada puede ser menor: consulta `prompt_coverage`. Distingue eventos, destinos y operaciones: `GetObject` no es `PutObject`, `ListObjects` ni `PutBucketPolicy`.
+- `reported_by` y `email action=delivered` no prueban clic. Solo atribuye interacción al mensaje investigado mediante `message_id` y destinatario compatibles, o una relación verificable de URL, destinatario y tiempo. Un clic de otro mensaje no sirve. Un clic tampoco demuestra credenciales robadas. Conserva esta distinción en hallazgos, señales, título, resumen y justificación de acciones.
+- `dkim=none` no significa `fail`. `mfa_result=satisfied_by_session` no acredita una nueva aprobación MFA. `blocked_by_smart_lockout` es un bloqueo explícito, mientras `invalid_password` solo demuestra fallo. Un inicio de proceso no demuestra ejecución maliciosa; una política pública no demuestra fuga de datos personales; Terraform no autoriza por sí solo esa política.
+- Vincula el evento concreto autorizado y el cambio en el mismo hallazgo. Compara la ventana solo con esa actividad. Los procesos posteriores de seguimiento no invalidan la hora de la ejecución original SCCM. Si falta la relación entre SYSTEM, el agente y `svc_sccm`, déjala pendiente.
+- Una consulta negativa permite describir cero coincidencias en esa fuente, identificador y ventana. No permite afirmar ausencia global de persistencia, C2, exfiltración o compromiso, ni concluir que hubo una única conexión a partir de un evento muestreado.
+- Conserva tareas manuales útiles de verificación de autorización y clasificación de recursos conocidos; nunca las presentes como contención ejecutable. Si cambia una conclusión, revisa también el título, resumen y acciones que dependían de ella.
 - **Veredicto (`verdict`)**:
   - `true_positive`: Actividad maliciosa o no autorizada respaldada por pruebas.
     Un ataque real bloqueado sigue siendo true_positive; el bloqueo permite proponer cierre, pero no convierte una detección correcta en false_positive.

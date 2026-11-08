@@ -1,13 +1,11 @@
 
 """Comprobar que el veredicto propuesto por el LLM está respaldado por pruebas."""
 
-from datetime import datetime, timezone
-from ipaddress import ip_address
 import re
 from unicodedata import normalize
-from zoneinfo import ZoneInfo
 
 from src.triage.models import Analysis, Evidence, ContextSnapshot, VerdictDecision
+from src.triage.investigation.authorization import check_authorization
 
 
 class VerdictEngine:
@@ -197,114 +195,7 @@ class VerdictEngine:
         if not analysis.signals.authorized_activity:
             return False, "Se propone actividad autorizada, pero authorized_activity=False."
 
-        changes = {
-            change["id"]: change
-            for change in context.changes
-            if isinstance(change, dict) and change.get("id")
-        }
-        cited = {
-            ref
-            for finding in analysis.findings
-            for ref in finding.evidence_ids
-            if ref in changes
-        }
-        if not cited:
-            return False, (
-                "No se cita ningún cambio o flujo autorizado comprobable en context.changes."
-            )
-
-        # Contrastar la fecha real de los eventos citados (UTC) con el calendario local.
-        cited_event_ids = {ref for f in analysis.findings for ref in f.evidence_ids}
-        times = []
-        cited_events = []
-        for item in evidence:
-            if (
-                item.event_id not in cited_event_ids or item.source == "changes"
-                or item.raw.get("kind") == "query_summary"
-            ):
-                continue
-            cited_events.append(item)
-            value = item.timestamp or item.raw.get("timestamp")
-            if not isinstance(value, str):
-                continue
-            try:
-                timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                if timestamp.tzinfo is None:
-                    timestamp = timestamp.replace(tzinfo=timezone.utc)
-                times.append(timestamp.astimezone(ZoneInfo("Europe/Madrid")))
-            except ValueError:
-                continue
-
-        if not times:
-            return False, "No hay timestamps de eventos citados para comprobar la autorización."
-
-        for change_id in cited:
-            change = changes[change_id]
-            try:
-                start = datetime.fromisoformat(change["inicio"]).replace(
-                    tzinfo=ZoneInfo("Europe/Madrid")
-                )
-                end = datetime.fromisoformat(change["fin"]).replace(
-                    tzinfo=ZoneInfo("Europe/Madrid")
-                )
-            except (KeyError, TypeError, ValueError):
-                continue
-            if start > end or not all(start <= timestamp <= end for timestamp in times):
-                continue
-
-            # Algunos cambios periódicos (p. ej. SCCM) también incluyen una
-            # franja horaria HH:MM-HH:MM en su campo detalle.
-            detail = change.get("detalle", "")
-            hours = re.search(r"(?<!\d)(\d{1,2}:\d{2})\s*[-–]\s*(\d{1,2}:\d{2})(?!\d)", detail)
-            if hours:
-                try:
-                    hour_start = datetime.strptime(hours.group(1), "%H:%M").time()
-                    hour_end = datetime.strptime(hours.group(2), "%H:%M").time()
-                    if not all(hour_start <= timestamp.time() <= hour_end for timestamp in times):
-                        continue
-                except ValueError:
-                    continue
-
-            # Solo contrastar alcances con nombres literales y orígenes IP explícitos.
-            # Las descripciones libres y los grupos de activos siguen siendo una limitación.
-            scope = str(change.get("alcance", "")).strip()
-            hosts = {
-                str(item.raw[key]).casefold() for item in cited_events
-                for key in ("hostname", "host", "client_host") if item.raw.get(key)
-            }
-            if re.fullmatch(r"[A-Z][A-Z0-9_-]*\d+(?:\s*,\s*[A-Z][A-Z0-9_-]*\d+)*", scope):
-                allowed_hosts = {host.strip().casefold() for host in scope.split(",")}
-                if hosts and not hosts <= allowed_hosts:
-                    continue
-            origin = re.search(
-                r"\b(?:IPs? origen|origen|desde)\s+(\d{1,3}(?:\.\d{1,3}){3})(?:-(\d{1,3}))?\b",
-                detail, re.IGNORECASE,
-            )
-            if origin:
-                try:
-                    first = ip_address(origin.group(1))
-                    last = first
-                    if origin.group(2):
-                        last = ip_address(origin.group(1).rsplit(".", 1)[0] + "." + origin.group(2))
-                    sources = [
-                        ip_address(item.raw["src_ip"]) for item in cited_events
-                        if item.raw.get("src_ip")
-                    ]
-                    if last < first or not sources or not all(first <= source <= last for source in sources):
-                        continue
-                except (TypeError, ValueError):
-                    continue
-
-            return True, (
-                f"Se comprobó el cambio {change_id} y su ventana temporal; "
-                "las restricciones de origen, destino y alcance que figuren "
-                "en texto libre no se han validado automáticamente."
-            )
-
-        return False, (
-            "Ningún cambio citado cubre la fecha y las condiciones explícitas "
-            "de alcance y origen de los eventos disponibles."
-        )
+        return check_authorization(analysis.findings, evidence, context)
 
     def _check_consistency(
         self,

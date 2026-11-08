@@ -53,6 +53,12 @@ class ActionRecommender:
             if not action.action:
                 continue
             containment = action.action in CONTAINMENT_ACTIONS
+            if not containment and (action.action.startswith(("close", "cerrar")) or action.action == "mark_as_benign"):
+                if verdict.verdict == "needs_more_info" or severity.severity in {"high", "critical"}:
+                    continue
+                reason = action.justification.casefold()
+                if ("autorizad" in reason or "benign" in reason) and verdict.verdict != "benign_true_positive":
+                    continue
             if containment:
                 if verdict.verdict in {"false_positive", "benign_true_positive"}:
                     continue
@@ -65,7 +71,9 @@ class ActionRecommender:
                     continue
             if containment and (
                 action.target.casefold() in AMBIGUOUS_TARGETS
-                or (action.target.startswith("<") and action.target.endswith(">"))
+                or (action.target.startswith("<") and action.target.endswith(">")
+                    and not (action.action == "purge_email"
+                             and re.fullmatch(r"<[^<>\s@]+@[^<>\s@]+>", action.target)))
             ):
                 continue
 

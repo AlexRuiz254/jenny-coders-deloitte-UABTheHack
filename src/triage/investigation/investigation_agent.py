@@ -5,15 +5,17 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from ipaddress import ip_address, ip_network
 import json
+import logging
 from pathlib import Path
 import re
 from typing import Any, get_args
 from urllib.parse import urlsplit
-from zoneinfo import ZoneInfo
+from unicodedata import normalize
 
 from tarvia_soc.llm import LLMClient
 from src.triage.ingestion.entities import extract_entities
 from src.triage.time_windows import api_time, parse_utc
+from src.triage.investigation.authorization import check_authorization
 from tarvia_soc.models import (
     Analysis,
     ContextSnapshot,
@@ -92,6 +94,7 @@ DUAL_USE_DOMAINS: frozenset[str] = frozenset(
 
 MAX_SEARCH_QUERIES: int = 5
 MAX_PROMPT_CHARS: int = 200_000
+logger = logging.getLogger(__name__)
 
 # Tipos de identificador presentes en las fuentes del dataset (búsqueda literal).
 SOURCE_IDENTIFIERS = {
@@ -119,7 +122,7 @@ SOURCE_FIELDS = {
     "waf": "src_ip, host (público), uri, status, action",
     "edr_events": "hostname (interno), user, event_type, process_name, parent_name, details",
     "firewall": "src_ip, dst_ip, zone_src, zone_dst, action",
-    "idp_signins": "user_upn, src_ip, session_id, result, mfa_result",
+    "idp_signins": "user_upn, src_ip, session_id, result, failure_reason, conditional_access, mfa_result",
     "idp_audit": "actor_upn, target, operation, src_ip, details",
     "cloudtrail": "userIdentity.userName/accessKeyId, sourceIPAddress, eventName, requestParameters",
     "sql_audit": "user, client_host, database, object, rows_returned",
@@ -146,7 +149,7 @@ IDENTIFIER_FIELDS = {
     "sha256": "hash", "sha1": "hash", "md5": "hash", "message_id": "message",
     "session_id": "session", "ai_session": "session", "accessKeyId": "key",
     "access_key": "key", "customer_id": "customer", "build_id": "build",
-    "bucket": "resource", "database": "resource", "resource": "resource",
+    "bucket": "resource", "bucketName": "resource", "database": "resource", "resource": "resource",
 }
 
 _HASH_RE = re.compile(r"^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{40}$|^[0-9a-fA-F]{64}$")
@@ -310,7 +313,21 @@ class InvestigationAgent:
         if not isinstance(raw_search_plan, SearchPlan):
             raise ValueError("LLMClient no devolvió una instancia válida de SearchPlan.")
 
-        return self._sanitize_search_plan(raw_search_plan, alert=alert, context=context, evidence=evidence)
+        coverage = self._assess_runbook_coverage(alert, plan, context, evidence)
+        essential = [LogQuery(**row["query"]) for row in coverage if row.get("query")]
+        # Las comprobaciones decisivas conservan su sitio aunque el LLM llene el cupo.
+        accepted = self._sanitize_search_plan(
+            SearchPlan(searches=essential + raw_search_plan.searches),
+            alert=alert, context=context, evidence=evidence)
+        remaining = self._assess_runbook_coverage(alert, plan, context, evidence, accepted.searches)
+        self.search_diagnostics = {
+            "proposed": len(raw_search_plan.searches), "accepted": len(accepted.searches),
+            "checks": [{k: v for k, v in row.items() if k != "query"} for row in remaining],
+        }
+        logger.info("Plan %s: propuestas=%d, aceptadas=%d, comprobaciones pendientes=%s",
+                    alert.get("alert_id"), len(raw_search_plan.searches), len(accepted.searches),
+                    [r["check"] for r in remaining if r["status"] == "pending"])
+        return accepted
 
     def analyze(
         self,
@@ -403,6 +420,231 @@ class InvestigationAgent:
         return json.dumps(data, ensure_ascii=False, separators=(",", ":"), default=str)
 
     @staticmethod
+    def _get_event_outcome(event: Evidence) -> str:
+        """Resultados explícitos del dataset; desconocido no significa fallo."""
+        raw, source = event.raw, event.source
+        action = raw.get("action")
+        if source == "edr_events" and isinstance(raw.get("details"), dict):
+            action = action or raw["details"].get("action")
+        if source == "idp_signins":
+            if raw.get("result") == "failure" and raw.get("failure_reason") == "blocked_by_smart_lockout":
+                return "blocked"
+            return {"success": "success", "failure": "failure"}.get(raw.get("result"), "unknown")
+        if action in {"blocked", "quarantined", "deny", "denied", "block"}:
+            return "blocked"
+        if source == "waf":
+            return "success" if action == "allowed" and str(raw.get("status", "")).startswith("2") else "unknown"
+        if source == "edr_events":
+            return "execution" if raw.get("event_type") == "process_start" else "unknown"
+        if source == "email":
+            return "delivered" if action == "delivered" else "unknown"
+        if source == "email_clicks":
+            return "interaction" if action == "allowed" else "unknown"
+        if source == "proxy":
+            return "success" if action == "allowed" and str(raw.get("status", "")).startswith("2") else "unknown"
+        if source == "cloudtrail":
+            if raw.get("errorCode"):
+                return "failure"
+            return "success" if raw.get("eventName") and raw.get("errorCode") == "" else "unknown"
+        if source == "ai_gateway" and isinstance(raw.get("guardrail"), dict):
+            return "blocked" if raw["guardrail"].get("action") == "blocked" else "unknown"
+        return {"success": "success", "failure": "failure"}.get(raw.get("result"), "unknown")
+
+    @classmethod
+    def _phishing_clicks(cls, alert, evidence) -> list[Evidence]:
+        """Relacionar interacción con el mensaje original y su destinatario."""
+        original = [ev for ev in evidence if ev.source == "email"
+                    and ev.event_id in alert.get("related_events", [])]
+        message = (alert.get("evidence") or {}).get("message_id")
+        messages = {str(message).casefold()} if message else set()
+        messages.update(str(ev.raw["message_id"]).casefold() for ev in original if ev.raw.get("message_id"))
+        users = set(extract_entities(alert).users)
+        urls = {url.casefold() for ev in original for url in ev.raw.get("urls", [])}
+        clicks = []
+        for ev in evidence:
+            if ev.source != "email_clicks" or cls._get_event_outcome(ev) != "interaction":
+                continue
+            raw = ev.raw
+            user = str(raw.get("user", "")).casefold().removesuffix("@tarvia.example")
+            if users and user not in users:
+                continue
+            click_message = str(raw.get("message_id", "")).casefold()
+            if click_message:
+                linked = click_message in messages
+            else:
+                linked = bool(users and user in users and str(raw.get("url", "")).casefold() in urls)
+            if not linked:
+                continue
+            time_value = ev.timestamp or raw.get("timestamp")
+            delivery_values = [row.timestamp or row.raw.get("timestamp") for row in original]
+            if not isinstance(time_value, str) or any(not isinstance(value, str) for value in delivery_values):
+                continue
+            try:
+                time = parse_utc(time_value)
+                deliveries = [parse_utc(value) for value in delivery_values]
+            except (KeyError, TypeError, ValueError):
+                continue
+            if deliveries and time < min(deliveries):
+                continue
+            clicks.append(ev)
+        return clicks
+
+    @staticmethod
+    def _asserted_claims(text: str) -> set[str]:
+        """Reconocer solo afirmaciones decisivas habituales, no interpretar prosa general."""
+        text = normalize("NFKD", text.casefold()).encode("ascii", "ignore").decode()
+        patterns = {
+            "click": r"\b(?:clic|clics|click|clicks|clicked)\b",
+            "execution_or_access_confirmed": r"\b(?:acceso exitoso|inicio de sesion exitoso|successful (?:login|access)|ejecucion confirmada)\b",
+            "malicious_execution": r"\b(?:ejecucion maliciosa|malicious execution)\b",
+            "credentials_compromised": r"\b(?:credenciales (?:comprometidas|robadas|enviadas)|robo de credenciales|credentials (?:stolen|compromised))\b",
+            "persistence": r"\b(?:persistencia|persistence)\b",
+            "personal_data_exposure": r"\b(?:fuga (?:de datos|confirmada)|exfiltracion|exposicion de datos personales|data (?:leak|exfiltration))\b",
+            "financial_fraud": r"\b(?:fraude (?:confirmado|consumado)|fraud confirmed)\b",
+            "authorized_activity": r"\b(?:actividad autorizada|ejecucion autorizada|authorized activity)\b",
+        }
+        claims = set()
+        for clause in re.split(r"[;\n]|(?<=[.!?])\s+|\b(?:pero|but)\b", text):
+            for name, pattern in patterns.items():
+                for match in re.finditer(pattern, clause):
+                    prefix = re.split(r",|\b(?:y|and)\b", clause[:match.start()])[-1]
+                    suffix = clause[match.end():].strip()
+                    uncertain = re.search(r"\b(?:no|sin|not|without|pendiente|verificar|confirmar|posible|posibilidad|podria|investigar|revisar|si hubo|si existe)\b", prefix)
+                    uncertain = uncertain or re.match(r"(?:no (?:confirmad|acreditad|demostrad)|sin confirmar|pendiente)", suffix)
+                    if not uncertain:
+                        claims.add(name)
+        return claims
+
+    @classmethod
+    def _claim_support(cls, *, alert, events, evidence, context, findings, intel=()) -> set[str]:
+        """Anclas estructuradas mínimas para las señales propuestas; no crean un veredicto."""
+        support = set()
+        executions = [ev for ev in events if cls._get_event_outcome(ev) == "execution"]
+        accesses = [ev for ev in events if ev.source in {"idp_signins", "ecom_auth", "cloudtrail"}
+                    and cls._get_event_outcome(ev) == "success"]
+        if executions or accesses:
+            support.add("execution_or_access_confirmed")
+        if any(ev in events for ev in cls._phishing_clicks(alert, evidence)):
+            support.add("click")
+        malicious_indicators = set()
+        for entry in intel:
+            try:
+                result = json.loads(entry.result)
+            except (TypeError, ValueError):
+                continue
+            if isinstance(result, dict) and (result.get("verdict") == "malicious" or result.get("reputation") == "malicious"):
+                malicious_indicators.add(entry.indicator.casefold())
+        for ev in accesses:
+            origin = str(ev.raw.get("src_ip", ev.raw.get("sourceIPAddress", ""))).casefold()
+            if origin in malicious_indicators:
+                support.add("credentials_compromised")
+        for ev in executions:
+            raw = ev.raw
+            command = str(raw.get("command_line", "")).casefold()
+            details = raw.get("details") if isinstance(raw.get("details"), dict) else {}
+            command += " " + str(details.get("decoded", "")).casefold()
+            if (str(raw.get("sha256", "")).casefold() in malicious_indicators
+                    or "downloadstring" in command and ("iex" in command or "invoke-expression" in command)
+                    or details.get("detection") and details.get("action") == "detected_only"):
+                support.add("malicious_execution")
+        for ev in events:
+            raw = ev.raw
+            details = raw.get("details") if isinstance(raw.get("details"), dict) else {}
+            if ev.source == "edr_events" and raw.get("event_type") == "process_access":
+                target = str(details.get("target_process", details.get("target", ""))).casefold()
+                if "lsass" in target or "credential" in str(details).casefold():
+                    support.add("credentials_compromised")
+            if (ev.source == "edr_events" and (
+                    raw.get("event_type") == "registry_set" and (details.get("key") or details.get("persistence"))
+                    or raw.get("event_type") == "service_install" and details.get("service_name"))
+                    or ev.source == "idp_audit" and raw.get("operation") in {"New-InboxRule", "Consent to application", "Add-MfaMethod"}
+                    or ev.source == "cloudtrail" and raw.get("eventName") in {"CreateUser", "CreateAccessKey", "AttachUserPolicy"}
+                    and cls._get_event_outcome(ev) == "success"):
+                support.add("persistence")
+            # Una política pública no acredita el contenido ni una descarga de datos personales.
+            pii_matches = raw.get("matches") if isinstance(raw.get("matches"), dict) else {}
+            if ev.source == "dlp" and any(pii_matches.get(key) for key in ("dni_nie", "iban", "email_address", "phone_es")):
+                support.add("sensitive_or_payment_data")
+                destination = str(raw.get("destination", "")).casefold().rsplit("@", 1)[-1]
+                approved = any(destination == name or destination.endswith("." + name)
+                               for name in ("tarvia.example", "sharepoint.com", "gestoria-pons.example"))
+                if (raw.get("channel") in {"web_upload", "email"} and raw.get("action") == "audit"
+                        and destination and not approved):
+                    support.add("personal_data_exposure")
+            if ev.source == "ecom_account" and raw.get("amount", 0):
+                support.add("sensitive_or_payment_data")
+            if ev.source == "ecom_account" and raw.get("event") == "giftcard_purchase" and raw.get("amount", 0):
+                # Una compra ordinaria no prueba fraude: buscar una toma de cuenta relacionada.
+                for previous in events:
+                    if (previous.source == "ecom_account" and previous.raw.get("event") == "email_change"
+                            and raw.get("customer_id") and previous.raw.get("customer_id") == raw["customer_id"]
+                            and raw.get("src_ip") and previous.raw.get("src_ip") == raw["src_ip"]):
+                        try:
+                            elapsed = (parse_utc(ev.timestamp) - parse_utc(previous.timestamp)).total_seconds()
+                            if 0 <= elapsed <= 86400:
+                                support.add("financial_fraud")
+                        except (TypeError, ValueError, AttributeError):
+                            continue
+        # Exigir un nexo técnico entre fases, además de proximidad temporal.
+        for index, left in enumerate(events):
+            for right in events[index + 1:]:
+                if (left.source, left.raw.get("event_type"), left.raw.get("operation"), left.raw.get("eventName")) == (
+                        right.source, right.raw.get("event_type"), right.raw.get("operation"), right.raw.get("eventName")):
+                    continue
+                try:
+                    if abs((parse_utc(left.timestamp) - parse_utc(right.timestamp)).total_seconds()) > 86400:
+                        continue
+                except (TypeError, ValueError, AttributeError):
+                    continue
+                first = cls._known_identifiers({}, ContextSnapshot(), [left])
+                second = cls._known_identifiers({}, ContextSnapshot(), [right])
+                linked = any(first[k] & second[k] for k in ("session", "message", "key", "hash", "url"))
+                parent_child = (left.raw.get("hostname") == right.raw.get("hostname")
+                                and left.raw.get("pid") and left.raw.get("pid") == right.raw.get("parent_pid"))
+                if (linked or parent_child) and support & {"malicious_execution", "credentials_compromised", "persistence"}:
+                    support.add("attack_chain")
+        if check_authorization(findings, evidence, context)[0]:
+            support.add("authorized_activity")
+        return support
+
+    @classmethod
+    def _claim_issues(cls, text, *, support, cited, evidence) -> list[str]:
+        issues = [f"{claim}: falta soporte estructurado vinculado a la actividad"
+                  for claim in sorted(cls._asserted_claims(text) - support)]
+        folded = normalize("NFKD", text.casefold()).encode("ascii", "ignore").decode()
+        absence = re.search(r"\b(?:no (?:hubo|hay|existe|se observo)|sin|ausencia de|se descarta)\b.*\b(?:compromiso|persistencia|exfiltracion|actividad posterior|movimiento lateral|c2)\b", folded)
+        if absence:
+            queries = [ev for ev in cited if ev.raw.get("kind") == "query_summary"]
+            scoped = re.search(r"\b(?:consulta|fuente|ventana|query|source|window)\b", folded)
+            if not queries or not scoped or any(ev.raw.get("truncated") is not False for ev in queries):
+                issues.append("ausencia no demostrada: limitar la conclusión a consultas completas, filtros y ventanas")
+        if re.search(r"\b(?:solo|solamente|unica|unico|only|single)\b.*\b(?:conexion|salida|connection)\b", folded):
+            identifiers = cls._known_identifiers({}, ContextSnapshot(), [ev for ev in evidence if ev.source == "proxy"])
+            complete = any(ev.source == "proxy" and ev.raw.get("count") == 1
+                           and any(str(ev.raw.get("q", "")).casefold() in identifiers[kind]
+                                   for kind in SOURCE_IDENTIFIERS["proxy"])
+                           and cls._query_covers("proxy", ev.raw["q"], ev.raw.get("desde"), ev.raw.get("hasta"), [ev])
+                           for ev in cited if ev.raw.get("kind") == "query_summary")
+            scoped = re.search(r"\b(?:consulta|fuente|ventana|query|source|window)\b", folded)
+            if sum(ev.source == "proxy" and bool(ev.event_id) for ev in evidence) != 1 or not complete or not scoped:
+                issues.append("unicidad de conexión sin recuento y cobertura suficiente; limitar a la consulta")
+        if re.search(r"\b(?:descargas|downloads)\b", folded):
+            numbers = re.findall(r"\b(\d+)\s+(?:descargas|downloads)\b", folded)
+            downloads = sum(ev.source == "cloudtrail" and ev.raw.get("eventName") == "GetObject"
+                            and cls._get_event_outcome(ev) == "success" for ev in evidence)
+            if any(int(number) != downloads for number in numbers):
+                issues.append("recuento de descargas sin distinguir operaciones CloudTrail GetObject")
+        if re.search(r"\bdkim\s*(?:=|:|es|en)?\s*(?:fail|fallo|fallido)\b", folded):
+            emails = [ev for ev in cited if ev.source == "email"]
+            if emails and not any(ev.raw.get("dkim") == "fail" for ev in emails):
+                issues.append("DKIM none no acredita DKIM fail")
+        if re.search(r"\bnueva aprobacion (?:de )?mfa\b", folded):
+            signins = [ev for ev in cited if ev.source == "idp_signins"]
+            if signins and not any(ev.raw.get("mfa_result") == "approved" for ev in signins):
+                issues.append("Una sesión MFA satisfecha no acredita una nueva aprobación")
+        return issues
+
+    @staticmethod
     def _known_identifiers(
         alert: RawAlert, context: ContextSnapshot, evidence: list[Evidence],
     ) -> dict[str, set[str]]:
@@ -456,6 +698,93 @@ class InvestigationAgent:
                 visit(item.raw)
         return known
 
+    @staticmethod
+    def _query_covers(source, identifier, start, end, evidence) -> bool:
+        if not start or not end:
+            return False
+        for ev in evidence:
+            raw = ev.raw
+            if (ev.event_id or ev.source != source or raw.get("kind") != "query_summary"
+                    or str(raw.get("q", "")).casefold() != identifier.casefold()
+                    or raw.get("truncated") is not False or not isinstance(raw.get("count"), int)
+                    or raw.get("exact_event_found") is False
+                    or not isinstance(raw.get("desde"), str) or not isinstance(raw.get("hasta"), str)):
+                continue
+            try:
+                if parse_utc(raw["desde"]) <= parse_utc(start) and parse_utc(raw["hasta"]) >= parse_utc(end):
+                    return True
+            except (TypeError, ValueError):
+                continue
+        return False
+
+    @classmethod
+    def _assess_runbook_coverage(cls, alert, plan, context, evidence, searches=()) -> list[dict]:
+        """Traducir las comprobaciones conocidas a búsquedas dirigidas o lagunas explícitas."""
+        known = cls._known_identifiers(alert, context, evidence)
+        original = cls._known_identifiers(alert, ContextSnapshot(), [
+            ev for ev in evidence if ev.event_id in alert.get("related_events", [])])
+        window = cls._compute_alert_window(alert)
+        start, end = window["window_start"], window["window_end"]
+        coverage = []
+        for check in plan.required_checks:
+            source, kinds = None, ()
+            if "click" in check and "post_click" not in check:
+                source, kinds = "email_clicks", ("message", "user")
+            elif "recipient_scope" in check or "message_delivery" in check or "historical_legitimate" in check:
+                source, kinds = "email", ("message", "user", "domain")
+            elif any(word in check for word in ("post_signin_audit", "session_actions", "session_persistence", "mailbox", "oauth")):
+                source, kinds = "idp_audit", ("user", "session", "ip")
+            elif any(word in check for word in ("signins", "authentication_history", "targeted_accounts", "customer_logins")):
+                source = "ecom_auth" if "customer" in check else "idp_signins"
+                kinds = ("ip", "user", "session") if alert.get("rule_id") == "UC-IDP-002" else ("user", "customer", "ip")
+            elif any(word in check for word in ("c2_network", "network_activity", "post_detection_network", "post_click_proxy", "network_connections")):
+                source, kinds = "proxy", ("host", "ip", "user")
+            elif any(word in check for word in ("persistence_mechanisms", "process_tree", "endpoint_execution", "file_download_and_execution")):
+                source, kinds = "edr_events", ("host", "user")
+            elif "backend_exploitation" in check:
+                source, kinds = "sql_audit", ("host", "resource")
+            elif "waf_action" in check or "inbound_waf" in check:
+                source, kinds = "waf", ("ip", "domain")
+            elif "post_login" in check or "account_takeover" in check:
+                source, kinds = "ecom_account", ("customer",)
+            elif any(word in check for word in ("bucket_access", "s3_get_object", "bucket_acl")):
+                source, kinds = "cloudtrail", ("resource", "key", "user")
+            elif any(word in check for word in ("access_key_baseline", "subsequent_iam", "cloud_persistence", "cloud_reconnaissance")):
+                source, kinds = "cloudtrail", ("key", "resource", "user")
+            elif "terraform_pipeline" in check:
+                source, kinds = "cicd_builds", ("host", "build")
+            if source is None or source not in plan.suggested_sources and source != "email_clicks":
+                coverage.append({"check": check, "status": "pending", "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."})
+                continue
+            # No sustituir un hostname de backend desconocido por el usuario o la IP del atacante.
+            identifiers = next((sorted(original[kind] or known[kind]) for kind in kinds
+                                if kind in SOURCE_IDENTIFIERS[source] and (original[kind] or known[kind])), [])
+            # Auditar un usuario de un spray no cubre las acciones de las demás cuentas.
+            if source == "idp_audit" and known["user"]:
+                identifiers = extract_entities({"entities": {"users": sorted(known["user"])}}).users
+            else:
+                identifiers = identifiers[:1]
+            if source == "email" and "recipient_scope" in check and original["domain"]:
+                identifiers += sorted(original["domain"])[:1]
+            for identifier in identifiers or [None]:
+                row = {"check": check, "source": source, "status": "pending"}
+                if identifier and start and end:
+                    row["identifier"] = identifier
+                    query = LogQuery(source=source, query=identifier, start=start, end=end,
+                                     reason=f"Resolver {check} sobre el identificador conocido; acotar resultado a esta fuente y ventana.")
+                    if cls._query_covers(source, identifier, start, end, evidence):
+                        row["status"] = "searched"  # Respuesta acotada, nunca ausencia global.
+                    elif any(s.source == source and s.query.casefold() == identifier.casefold()
+                             and s.start and s.end and parse_utc(s.start) <= parse_utc(start)
+                             and parse_utc(s.end) >= parse_utc(end) for s in searches):
+                        row["status"] = "planned"
+                    else:
+                        row["query"] = query.model_dump()
+                else:
+                    row["limitation"] = "Falta un identificador compatible o una ventana válida; no se inventa una consulta."
+                coverage.append(row)
+        return coverage
+
     @classmethod
     def _sample_records(
         cls, records: list[dict[str, Any]], budget: int, linked_ids=(),
@@ -473,10 +802,14 @@ class InvestigationAgent:
 
         patterns = {key: pattern(row) for key, row in unique.items()}
         counts = Counter(patterns.values())
-        ordered = sorted(unique, key=lambda key: (
-            counts[patterns[key]],
-            unique[key].get("event_id", unique[key].get("alert_id")) not in linked_ids,
-        ))
+        def priority(key):
+            row = unique[key]
+            raw = row.get("raw", row)
+            event = Evidence(source=row.get("source", ""), raw=raw)
+            return (row.get("event_id", row.get("alert_id")) not in linked_ids,
+                    cls._get_event_outcome(event) not in {"success", "execution", "blocked", "interaction"},
+                    counts[patterns[key]], str(row.get("timestamp", "")))
+        ordered = sorted(unique, key=priority)
         selected, omitted, used = [], [], 2
         # Dos representantes por variante antes de llenar con repeticiones.
         occurrences = Counter()
@@ -485,7 +818,8 @@ class InvestigationAgent:
             group = patterns[key]
             (first if occurrences[group] < 2 else rest).append(key)
             occurrences[group] += 1
-        for key in first + rest:
+        linked = [key for key in ordered if unique[key].get("event_id") in linked_ids]
+        for key in linked + [key for key in first + rest if key not in linked]:
             size = len(key) + len(str(unique[key].get("event_id", ""))) + 5
             if used + size <= budget:
                 selected.append(unique[key])
@@ -503,6 +837,38 @@ class InvestigationAgent:
         if times:
             coverage.update(first=min(times), last=max(times))
         return selected, coverage
+
+    @classmethod
+    def _summarize_evidence(cls, evidence) -> dict:
+        """Agregados sobre registros completos recibidos, con operaciones separadas."""
+        groups = {}
+        seen = set()
+        for ev in evidence:
+            if ev.source == "changes" or ev.raw.get("kind") == "query_summary":
+                continue
+            key = (ev.source, ev.event_id, cls._serialize_json(ev.raw))
+            if key in seen:
+                continue
+            seen.add(key)
+            groups.setdefault(ev.source, []).append(ev)
+        result = {}
+        for source, events in groups.items():
+            times = [ev.timestamp for ev in events if ev.timestamp]
+            data = {"events_received": len(events), "outcomes": dict(Counter(cls._get_event_outcome(ev) for ev in events))}
+            if times:
+                data.update(first=min(times), last=max(times))
+            if source == "proxy":
+                destinations = sorted({str(ev.raw.get("domain") or ev.raw.get("dst_ip") or ev.raw.get("url"))
+                                       for ev in events if ev.raw.get("domain") or ev.raw.get("dst_ip") or ev.raw.get("url")})
+                data.update(distinct_destinations=len(destinations), destinations=destinations[:20])
+            if source == "cloudtrail":
+                data["operations"] = dict(Counter(str(ev.raw.get("eventName", "unknown")) for ev in events))
+            if source == "email":
+                recipients = {r for ev in events for r in ev.raw.get("recipients", [])}
+                data["distinct_recipients"] = len(recipients)
+            data["limitation"] = "Agregado de registros recibidos; no acredita ausencia fuera de las consultas ni añade IDs de eventos."
+            result[source] = data
+        return result
 
     @classmethod
     def _prepare_evidence(cls, evidence: list[Evidence], alert: RawAlert, budget: int):
@@ -532,6 +898,8 @@ class InvestigationAgent:
             section("alert_window", self._compute_alert_window(alert))
             section("source_fields", {source: SOURCE_FIELDS.get(source, sorted(kinds))
                                       for source, kinds in SOURCE_IDENTIFIERS.items()})
+            section("untrusted_runbook_coverage", self._assess_runbook_coverage(alert, plan, context, evidence))
+        section("untrusted_evidence_aggregates", self._summarize_evidence(evidence))
         # Reservar espacio para las referencias, cobertura y separadores, sin cortar JSON.
         available = MAX_PROMPT_CHARS - len("\n\n".join(sections)) - 12_000
         if available < 0:
@@ -569,8 +937,11 @@ class InvestigationAgent:
         """Validar literales conocidos, compatibilidad básica, ventanas y duplicados."""
         known = cls._known_identifiers(alert or {}, context or ContextSnapshot(), evidence)
         bounded = cls._compute_alert_window(alert or {})
+        if alert is not None and not bounded["window_start"]:
+            logger.info("Plan rechazado: falta una fecha de alerta válida para acotar las búsquedas")
+            return SearchPlan(searches=[])
         queries, seen = [], set()
-        for item in search_plan.searches:
+        for index, item in enumerate(search_plan.searches):
             text = item.query.strip()
             selector = re.fullmatch(
                 r"(?:src_ip|dst_ip|ip|hostname|host|upn|username|user|session_id|message_id|accessKeyId|sha256|domain|url)\s*[:=]\s*(.+)",
@@ -579,14 +950,17 @@ class InvestigationAgent:
                 text = selector.group(1).strip().strip('"')
             # WAF guarda host y uri por separado, no una URL absoluta.
             if item.source == "waf" and "://" in text:
+                logger.info("Consulta %d (%s) rechazada: URL absoluta incompatible con WAF", index, item.source)
                 continue
             if (not text or not item.reason.strip() or item.source not in VALID_LOG_SOURCES
                     or text.casefold() in GENERIC_SEARCH_TERMS or "*" in text
                     or any(char.isspace() for char in text)):
+                logger.info("Consulta %d (%s) rechazada: formato, fuente o término genérico", index, item.source)
                 continue
             if alert is not None and not any(
                 text.casefold() in known[kind] for kind in SOURCE_IDENTIFIERS[item.source]
             ):
+                logger.info("Consulta %d (%s) rechazada: identificador desconocido o incompatible", index, item.source)
                 continue
             try:
                 start = parse_utc(item.start) if item.start else None
@@ -595,29 +969,20 @@ class InvestigationAgent:
                     start = max(start or parse_utc(bounded["window_start"]), parse_utc(bounded["window_start"]))
                     end = min(end or parse_utc(bounded["window_end"]), parse_utc(bounded["window_end"]))
                 if start and end and start > end:
+                    logger.info("Consulta %d (%s) rechazada: ventana fuera de límites", index, item.source)
                     continue
             except (ValueError, TypeError):
+                logger.info("Consulta %d (%s) rechazada: fecha inválida", index, item.source)
                 continue
             start_text, end_text = api_time(start) if start else None, api_time(end) if end else None
             key = (item.source, text.casefold(), start_text, end_text)
             if key in seen:
+                logger.info("Consulta %d (%s) descartada: duplicada", index, item.source)
                 continue
             # Un evento aislado no cubre una búsqueda de actividad; solo metadatos de consulta.
-            covered = False
-            for previous in evidence:
-                raw = previous.raw
-                if (previous.event_id or previous.source != item.source
-                        or str(raw.get("q", "")).casefold() != text.casefold()
-                        or raw.get("truncated") is not False):
-                    continue
-                try:
-                    covered = ((not raw.get("desde") or start is not None and parse_utc(raw["desde"]) <= start)
-                               and (not raw.get("hasta") or end is not None and parse_utc(raw["hasta"]) >= end))
-                except (ValueError, TypeError):
-                    continue
-                if covered:
-                    break
+            covered = cls._query_covers(item.source, text, start_text, end_text, evidence)
             if covered:
+                logger.info("Consulta %d (%s) descartada: cubierta por consulta completa", index, item.source)
                 continue
             seen.add(key)
             queries.append(LogQuery(source=item.source, query=text, reason=item.reason.strip(),
@@ -660,6 +1025,7 @@ class InvestigationAgent:
         if visible_ids is not None:
             valid_ids &= set(visible_ids)
         findings, seen = [], set()
+        rejected_findings = 0
         for finding in analysis.findings:
             statement = finding.statement.strip()
             refs = list(dict.fromkeys(ref for ref in finding.evidence_ids if ref in valid_ids))
@@ -668,26 +1034,43 @@ class InvestigationAgent:
             if len(refs) < len(set(finding.evidence_ids)):
                 questions.append(f"Referencias ausentes, ambiguas o no mostradas en el hallazgo: {statement}")
             # Rechazar dos errores inequívocos de procedencia, sin interpretar texto libre en general.
-            sources = {by_id[ref].source for ref in refs if ref in by_id
-                       and by_id[ref].event_id and by_id[ref].source != "changes"}
             query_refs = [ref for ref in refs if ref in by_id and not by_id[ref].event_id
                           and by_id[ref].raw.get("kind") == "query_summary"]
             query_claim = re.search(r"(?:consulta|búsqueda|search|query).*(?:cero|0 resultados|sin resultados|no (?:devolvió|encontró)|zero|no results)", statement, re.I)
-            global_absence = re.search(r"(?:no (?:hubo|hay|existe)|sin evidencia de|no evidence of|no compromise).*(?:compromiso|exfiltración|web.?shell|persistencia)", statement, re.I)
             if (not refs or query_claim and not query_refs
-                    or global_absence and sources <= {"waf", "email"}):
+                or query_claim and any(by_id[ref].raw.get("count") != 0 for ref in query_refs)):
                 questions.append(f"Afirmación pendiente de soporte suficiente (no confirmada): {statement}")
+                rejected_findings += 1
+                continue
+            cited = [by_id[ref] for ref in refs if ref in by_id]
+            candidate = Finding(statement=statement, evidence_ids=refs)
+            support = cls._claim_support(
+                alert=alert, events=[ev for ev in cited if ev.event_id and ev.source != "changes"],
+                evidence=evidence, context=context, findings=[candidate], intel=intel)
+            issues = cls._claim_issues(statement, support=support, cited=cited, evidence=evidence)
+            if issues:
+                rejected_findings += 1
+                questions.append("Hallazgo no confirmado: " + statement + " Motivo: " + "; ".join(issues) + ".")
+                logger.info("Hallazgo descartado (%s): %s", alert.get("alert_id"), ", ".join(issues))
                 continue
             key = (statement, tuple(refs))
             if key not in seen:
                 findings.append(Finding(statement=statement, evidence_ids=refs))
                 seen.add(key)
 
+        accepted_ids = {ref for finding in findings for ref in finding.evidence_ids}
+        accepted_events = [ev for ev in evidence if ev.event_id in accepted_ids and ev.source != "changes"]
+        support = cls._claim_support(alert=alert, events=accepted_events, evidence=evidence,
+                                     context=context, findings=findings, intel=intel)
         signals = cls._sanitize_signals(signals=analysis.signals, context=context,
-                                        alert=alert, findings=findings, evidence=evidence)
+                                        alert=alert, findings=findings, evidence=evidence, intel=intel, support=support)
         for name in PolicySignals.model_fields:
-            if getattr(signals, name) != getattr(analysis.signals, name):
+            if getattr(analysis.signals, name) and not getattr(signals, name):
                 questions.append(f"Se corrigió {name}: la salida propuesta no tenía soporte coherente verificable; revisar su alcance.")
+        if alert.get("runbook") == "RB-01" and not cls._phishing_clicks(alert, evidence):
+            questions.append("Verificar la interacción con el mensaje investigado: reportarlo o entregarlo no confirma un clic ni envío de credenciales.")
+        if analysis.signals.authorized_activity and not signals.authorized_activity:
+            questions.append(check_authorization(findings, evidence, context)[1])
         known = cls._known_identifiers(alert, context, evidence)
         for entry in intel:
             kind = {"ip": "ip", "domain": "domain", "url": "url",
@@ -710,10 +1093,19 @@ class InvestigationAgent:
         actions = cls._sanitize_proposed_actions(analysis.proposed_actions,
                                                 known_targets=targets, manual_targets=manual_targets,
                                                 context=context)
-        kept = {(item.action, item.target) for item in actions}
+        actions = [item for item in actions if not cls._claim_issues(
+            item.justification, support=support, cited=accepted_events, evidence=evidence)]
+        actions = [item for item in actions if not (
+            item.action in {"reset_password", "revoke_sessions", "disable_user", "isolate_host"}
+            and "click" in cls._asserted_claims(item.justification)
+            and not support & {"credentials_compromised", "malicious_execution"})]
         for item in analysis.proposed_actions:
-            if (item.action.strip().casefold(), item.target.strip()) not in kept:
-                questions.append(f"Propuesta pendiente de revisión por formato, objetivo o restricción OT: {item.action} sobre {item.target}.")
+            matched = any(action.action == item.action.strip().casefold() and (
+                action.target.casefold() == item.target.strip().casefold()
+                or action.action not in CONTAINMENT_ACTIONS and action.target.casefold() in item.target.casefold())
+                for action in actions)
+            if not matched:
+                questions.append(f"Propuesta pendiente de revisión por soporte, formato, objetivo o restricción OT: {item.action} sobre {item.target}.")
         for name, coverage in (prompt_coverage or {}).items():
             if coverage.get("omitted"):
                 questions.append(f"Cobertura del prompt ({name}): {coverage['included']} de {coverage['unique_records']} registros únicos mostrados; revisar los omitidos antes de excluir actividad.")
@@ -726,16 +1118,25 @@ class InvestigationAgent:
             if verdict != "needs_more_info":
                 questions.append(f"Propuesta {verdict} sin soporte suficiente o contradictoria; resolver antes de decidir.")
                 verdict = "needs_more_info"
-        summary = analysis.summary
         corrected = [name for name in PolicySignals.model_fields
                      if getattr(signals, name) != getattr(analysis.signals, name)]
-        if corrected or verdict != analysis.verdict:
-            summary = ("Análisis con inconsistencias pendientes de revisión: "
-                       + ("señales corregidas: " + ", ".join(corrected) + ". " if corrected else "")
-                       + "Las afirmaciones afectadas de la propuesta original no están confirmadas. "
-                       + "Consultar las preguntas pendientes. Propuesta original: " + summary)
-        return Analysis(title=analysis.title, verdict=verdict,
-                        confidence=min(analysis.confidence, 0.5) if verdict != analysis.verdict else analysis.confidence,
+        presentation_issues = cls._claim_issues(
+            analysis.title + ". " + analysis.summary, support=support,
+            cited=[by_id[ref] for ref in accepted_ids if ref in by_id], evidence=evidence)
+        changed = bool(rejected_findings or corrected or verdict != analysis.verdict or presentation_issues)
+        title, summary = analysis.title, analysis.summary
+        if changed:
+            title = findings[0].statement[:140] if findings else "Alerta SOC pendiente de verificación"
+            summary = " ".join(f.statement.rstrip(".") + "." for f in findings[:3])
+            summary = summary or "Las evidencias disponibles no sustentan todavía una conclusión técnica."
+            if verdict == "needs_more_info":
+                summary += " Falta información para decidir malicia o autorización."
+            if questions:
+                summary += " Quedan comprobaciones pendientes; las conclusiones se limitan a los registros y consultas recibidos."
+        logger.info("Normalización %s: hallazgos rechazados=%d; señales corregidas=%s; acciones=%d/%d",
+                    alert.get("alert_id"), rejected_findings, corrected, len(actions), len(analysis.proposed_actions))
+        return Analysis(title=title, verdict=verdict,
+                        confidence=min(analysis.confidence, 0.5 if verdict != analysis.verdict else 0.8) if changed else analysis.confidence,
                         summary=summary, findings=findings, signals=signals,
                         proposed_actions=actions,
                         open_questions=list(dict.fromkeys(q.strip() for q in questions if q.strip())))
@@ -753,118 +1154,64 @@ class InvestigationAgent:
     @classmethod
     def _sanitize_signals(
         cls, *, signals: PolicySignals, context: ContextSnapshot,
-        alert: RawAlert | None = None, findings=(), evidence=(),
+        alert: RawAlert | None = None, findings=(), evidence=(), intel=(), support=None,
     ) -> PolicySignals:
-        """Comprobar soporte mínimo y contradicciones, sin volver a investigar."""
+        """Conservar señales propuestas con anclas verificables y alcance explícito."""
         data = signals.model_dump()
         cited = {ref for finding in findings for ref in finding.evidence_ids}
         events = [ev for ev in evidence if ev.event_id in cited and ev.source != "changes"]
-        if alert is not None:
-            affected = {u.casefold() for u in extract_entities(alert).users}
-            affected.update(cls._known_identifiers({}, ContextSnapshot(), events)["user"])
-            def normalize(value):
-                value = str(value).casefold()
-                if value.startswith("tarvia\\"):
-                    value = value.split("\\", 1)[1]
-                return value.removesuffix("@tarvia.example")
-            affected = {normalize(value) for value in affected}
-            affected_users = [user for user in context.users if affected & {
-                normalize(user.get(field, "")) for field in ("username", "upn", "user_id")
-            }]
-            data["privileged_or_vip"] &= any(
-                cls._is_truthy_flag(user.get("privileged")) or cls._is_truthy_flag(user.get("vip"))
-                or str(user.get("account_type", "")).casefold() == "admin"
-                for user in affected_users)
-
-        if not events and alert is not None:
-            for name in data:
-                if name != "privileged_or_vip":
-                    data[name] = False
-        only_prevented = bool(events) and all(
-            (ev.source == "waf" and ev.raw.get("action") == "blocked")
-            or (ev.source in {"idp_signins", "ecom_auth"} and ev.raw.get("result") == "failure")
-            for ev in events)
-        if only_prevented:
-            for name in ("execution_or_access_confirmed", "malicious_execution", "credentials_compromised",
-                         "persistence", "personal_data_exposure", "financial_fraud"):
-                data[name] = False
-        if events and all(ev.source == "email" for ev in events):
-            for name in ("malicious_execution", "credentials_compromised", "persistence"):
-                data[name] = False
+        if support is None:
+            support = cls._claim_support(alert=alert or {}, events=events, evidence=evidence,
+                                         context=context, findings=findings, intel=intel)
+        for name in ("execution_or_access_confirmed", "malicious_execution", "credentials_compromised",
+                     "persistence", "personal_data_exposure", "sensitive_or_payment_data", "financial_fraud", "attack_chain", "authorized_activity"):
+            data[name] &= name in support
+        affected = cls._known_identifiers(alert or {}, ContextSnapshot(), events)["user"]
+        original = cls._known_identifiers(alert or {}, ContextSnapshot(), [])
+        campaign_events = [ev for ev in evidence if ev.event_id and (
+            ev.source == "idp_signins" and str(ev.raw.get("src_ip", "")).casefold() in original["ip"]
+            or ev.source == "email" and str(ev.raw.get("message_id", "")).casefold() in original["message"])]
+        affected.update(cls._known_identifiers({}, ContextSnapshot(), campaign_events)["user"])
+        data["privileged_or_vip"] = any(
+            affected & cls._known_identifiers({}, ContextSnapshot(users=[user]), [])["user"]
+            and (cls._is_truthy_flag(user.get("privileged")) or cls._is_truthy_flag(user.get("vip"))
+                 or str(user.get("account_type", "")).casefold() == "admin")
+            for user in context.users)
+        blocked = [ev for ev in events if cls._get_event_outcome(ev) == "blocked"]
+        data["blocked_before_effect"] &= bool(blocked)
+        # Comprobar continuación en TODAS las evidencias, aunque no se haya citado.
+        for blocked_event in blocked:
+            identity = cls._known_identifiers({}, ContextSnapshot(), [blocked_event])
+            for ev in evidence:
+                if not ev.event_id or ev.source == "changes":
+                    continue
+                other = cls._known_identifiers({}, ContextSnapshot(), [ev])
+                related = any(identity[k] & other[k] for k in ("host", "user", "session", "ip", "message"))
+                try:
+                    later = parse_utc(ev.timestamp) >= parse_utc(blocked_event.timestamp)
+                except (TypeError, ValueError, AttributeError):
+                    later = False
+                if related and later and cls._get_event_outcome(ev) in {"success", "execution", "interaction"}:
+                    data["blocked_before_effect"] = False
         if data["malicious_execution"]:
             data["execution_or_access_confirmed"] = True
-        # No borrar un bloqueo válido de otra fase. Un solo evento no soporta ambos alcances.
-        if len(events) == 1 and data["blocked_before_effect"] and data["execution_or_access_confirmed"]:
-            data["blocked_before_effect"] = False
-        if data["blocked_before_effect"] and events and not any(
-            ev.raw.get("action") in {"blocked", "quarantined", "deny", "denied", "block"}
-            or isinstance(ev.raw.get("guardrail"), dict) and ev.raw["guardrail"].get("action") == "blocked"
-            for ev in events
-        ):
-            data["blocked_before_effect"] = False
-        if data["blocked_before_effect"] and data["execution_or_access_confirmed"]:
-            blocked_times = {}
-            timed_events = []
-            for ev in events:
-                try:
-                    instant = parse_utc(ev.timestamp) if ev.timestamp else None
-                except (TypeError, ValueError):
-                    continue
-                fields = ("hostname", "host", "uri", "user", "user_upn", "customer_id",
-                          "src_ip", "dst_ip", "session_id")
-                identity = tuple((key, str(ev.raw[key]).casefold()) for key in fields if ev.raw.get(key))
-                if instant is None or not identity:
-                    continue
-                key = (ev.source, identity)
-                timed_events.append((ev, key, instant))
-                if ev.raw.get("action") in {"blocked", "deny", "denied", "block"}:
-                    blocked_times[key] = min(instant, blocked_times.get(key, instant))
-            for ev, key, instant in timed_events:
-                successful = (ev.raw.get("result") == "success" or ev.raw.get("event_type") == "process_start"
-                              or ev.raw.get("action") == "allowed" and str(ev.raw.get("status", "")).startswith("2"))
-                if successful and key in blocked_times and instant > blocked_times[key]:
+        # El bloqueo de un evento se conserva como hecho; la señal compuesta exige
+        # además cobertura de continuación suficiente para permitir el ajuste -1.
+        if data["blocked_before_effect"] and alert:
+            window = cls._compute_alert_window(alert)
+            for ev in blocked:
+                identity = cls._known_identifiers({}, ContextSnapshot(), [ev])
+                compatible = SOURCE_IDENTIFIERS.get(ev.source, set())
+                complete = any(cls._query_covers(ev.source, value, window["window_start"], window["window_end"], evidence)
+                               for kind in compatible for value in identity[kind])
+                if not complete:
                     data["blocked_before_effect"] = False
-                    break
-        if data["attack_chain"]:
-            phases = {(ev.source, ev.raw.get("event_type") or ev.raw.get("eventName")
-                       or ev.raw.get("operation") or "") for ev in events}
-            if len({ev.event_id for ev in events}) < 2 or len(phases) < 2:
-                data["attack_chain"] = False
-            else:
-                identities = []
-                for source, activity in phases:
-                    group = [ev for ev in events if (ev.source, ev.raw.get("event_type") or ev.raw.get("eventName")
-                             or ev.raw.get("operation") or "") == (source, activity)]
-                    identities.append(cls._known_identifiers({}, ContextSnapshot(), group))
-                for identity in identities:
-                    for asset in context.assets:
-                        aliases = {str(asset[field]).casefold() for field in ("hostname", "ip") if asset.get(field)}
-                        if aliases & (identity["host"] | identity["ip"]):
-                            identity["host"].update(aliases)
-                shared = any(
-                    any(left[kind] & right[kind] for kind in ("host", "user", "session", "key", "customer"))
-                    for i, left in enumerate(identities) for right in identities[i + 1:]
-                )
-                if not shared:
-                    data["attack_chain"] = False
-        if data["authorized_activity"]:
-            cited_changes = [change for change in context.changes if change.get("id") in cited]
-            data["authorized_activity"] = bool(cited_changes)
-            # Rechazar ventanas imposibles; el alcance libre lo contrasta el LLM.
-            if cited_changes:
-                local_zone = ZoneInfo("Europe/Madrid")
-                covered = False
-                for change in cited_changes:
-                    try:
-                        start = datetime.fromisoformat(change["inicio"])
-                        end = datetime.fromisoformat(change["fin"])
-                        start = start.replace(tzinfo=local_zone) if start.tzinfo is None else start
-                        end = end.replace(tzinfo=local_zone) if end.tzinfo is None else end
-                        times = [parse_utc(ev.timestamp) for ev in events if ev.timestamp]
-                        covered |= bool(times) and len(times) == len(events) and start <= end and all(start <= t <= end for t in times)
-                    except (KeyError, TypeError, ValueError):
-                        continue
-                data["authorized_activity"] = covered
+            if alert.get("source_product") == "WAF":
+                # Buscar al atacante en WAF no comprueba ejecución en el backend.
+                backend = cls._known_identifiers(alert, ContextSnapshot(), events)["host"]
+                data["blocked_before_effect"] &= bool(backend) and any(
+                    cls._query_covers("edr_events", host, window["window_start"], window["window_end"], evidence)
+                    for host in backend)
         return PolicySignals.model_validate(data)
 
     @staticmethod
@@ -911,7 +1258,13 @@ class InvestigationAgent:
                 if name == "block_ioc" and not cls._is_valid_ioc_target(target):
                     continue
             elif manual_targets is not None and target.casefold() not in manual_targets:
-                continue
+                # Solo resolver un recurso citado literalmente e inequívoco en la tarea.
+                matches = [known for known in manual_targets if known and known != "ticket"
+                           and len(known) >= 4 and re.search(r"(?<![\w.-])" + re.escape(known) + r"(?![\w.-])",
+                                                           target.casefold())]
+                if len(matches) != 1:
+                    continue
+                target = matches[0]
             key = (name, target.casefold())
             if key not in seen:
                 valid.append(ProposedAction(action=name, target=target, justification=reason))

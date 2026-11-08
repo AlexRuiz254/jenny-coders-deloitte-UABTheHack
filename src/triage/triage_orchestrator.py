@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from time import perf_counter
 from typing import Any
 import logging
-from src.triage.models import Evidence, Ticket
+from src.triage.models import ContextSnapshot, Evidence, SearchPlan, Ticket
 from src.data.soc_api_client import SOCAPIClient
 from src.data.reference_repository import ReferenceRepository
 from src.data.ticket_repository import SQLiteTicketRepository, utc_now
@@ -149,10 +149,13 @@ class TriageOrchestrator:
         )
 
         # El investigador planifica; el colector ejecuta las consultas.
+        evidence = list(initial_evidence)
+        looked_up = self.investigator._known_identifiers(alert, context, [])
+        call("enrich_discovered", self._enrich_discovered, alert, context, evidence, looked_up)
         searches = call(
             "plan_searches", self.investigator.plan_searches,
             alert=alert, runbook_text=runbook_text, plan=plan,
-            context=context, evidence=initial_evidence
+            context=context, evidence=evidence
         )
         # La API compara fechas como texto: siempre enviar UTC con milisegundos.
         start, end = alert_window(alert)
@@ -163,10 +166,33 @@ class TriageOrchestrator:
                 raise ValueError("La búsqueda del investigador queda fuera de la ventana de ±24 horas.")
             search.start, search.end = api_time(query_start), api_time(query_end)
         additional_evidence = call("search_evidence", self.evidence.search, searches)
-        evidence = []
-        for item in [*initial_evidence, *additional_evidence]:
+        for item in additional_evidence:
             if item not in evidence:
                 evidence.append(item)
+        new_context = call("enrich_discovered", self._enrich_discovered,
+                           alert, context, evidence, looked_up)
+        pending = self.investigator._assess_runbook_coverage(alert, plan, context, evidence)
+        if new_context and any(row.get("query") for row in pending):
+            second = call(
+                "plan_followup_searches", self.investigator.plan_searches,
+                alert=alert, runbook_text=runbook_text, plan=plan,
+                context=context, evidence=evidence)
+            # Tampoco repetir consultas truncadas en la segunda y última ronda.
+            attempted = {(s.source, s.query.casefold(), s.start, s.end) for s in searches.searches}
+            second = self.investigator._sanitize_search_plan(second, alert=alert, context=context, evidence=evidence)
+            second = SearchPlan(searches=[s for s in second.searches
+                                         if (s.source, s.query.casefold(), s.start, s.end) not in attempted])
+            if second.searches:
+                for item in call("search_followup_evidence", self.evidence.search, second):
+                    if item not in evidence:
+                        evidence.append(item)
+                searches.searches.extend(second.searches)
+                call("enrich_discovered", self._enrich_discovered, alert, context, evidence, looked_up)
+        diagnostics = getattr(self.investigator, "search_diagnostics", {})
+        # Guardar la cobertura realmente recuperada, en lugar de la última intención de búsqueda.
+        final_coverage = self.investigator._assess_runbook_coverage(alert, plan, context, evidence)
+        diagnostics = {**diagnostics, "checks": [{k: v for k, v in row.items() if k != "query"} for row in final_coverage]}
+        emit("investigation_coverage", "completed", **diagnostics)
         # El constructor ya sabe vincular Evidence: incluir la autorización real,
         # sin cambiar su contrato ni convertirla en un evento de log inventado.
         evidence.extend(Evidence(source="changes", event_id=change["id"], raw=change)
@@ -177,6 +203,14 @@ class TriageOrchestrator:
             alert=alert, runbook_text=runbook_text, context=context,
             intel=intel, evidence=evidence, related_alerts=related_alerts
         )
+        for row in final_coverage:
+            if row["status"] == "pending":
+                question = f"Comprobación pendiente del runbook: {row['check']}"
+                if row.get("identifier"):
+                    question += f" ({row['source']}: {row['identifier']})"
+                question += ". " + row.get("limitation", "Sin consulta completa para el identificador y la ventana requeridos.")
+                if question not in analysis.open_questions:
+                    analysis.open_questions.append(question)
         for item in evidence:
             if item.raw.get("truncated"):
                 question = f"Consulta incompleta en {item.source}: {item.raw.get('q', '')}. Se alcanzó el límite de la API."
@@ -225,6 +259,7 @@ class TriageOrchestrator:
                 "runbook_id": runbook_id, "runbook_text": runbook_text,
                 "context": context.model_dump(mode="json"),
                 "search_plan": searches.model_dump(mode="json"),
+                "search_diagnostics": diagnostics,
                 "analysis": analysis.model_dump(mode="json"),
                 "verdict": verdict.model_dump(mode="json"),
                 "related_alerts": related_alerts,
@@ -234,6 +269,45 @@ class TriageOrchestrator:
         call("save_ticket", self.store.save, record, trace, allow_reprocess=reprocess)
         emit("completed", "completed", ticket_id=ticket.ticket_id)
         return ticket
+
+    def _enrich_discovered(self, alert, context, evidence, looked_up) -> bool:
+        """Ampliar contexto con campos estructurados; recordar también consultas fallidas."""
+        known = self.investigator._known_identifiers({}, ContextSnapshot(), evidence)
+        groups = {"host": "hosts", "user": "users", "ip": "ips"}
+        extra = {}
+        for kind, group in groups.items():
+            candidates = sorted(known[kind] - looked_up[kind])
+            if kind == "user":
+                # El normalizador unifica UPN corporativo, TARVIA\usuario y username.
+                candidates = extract_entities({"entities": {group: candidates}}).users
+                previous = extract_entities({"entities": {group: sorted(looked_up[kind])}}).users
+                candidates = [value for value in candidates if value not in previous]
+            extra[group] = candidates[:50]
+            if len(candidates) > 50:
+                context.missing_lookups.append(f"{group}:enriquecimiento limitado a 50 entidades nuevas")
+            looked_up[kind].update(extra[group])
+        if not any(extra.values()):
+            return False
+        enriched = self.context.enrich(
+            {**alert, "entities": extra, "evidence": {}},
+            extract_entities({"entities": extra}))
+        changed = False
+        for field in ContextSnapshot.model_fields:
+            current = getattr(context, field)
+            for row in getattr(enriched, field):
+                keys = {"assets": ("asset_id", "hostname", "ip"), "users": ("user_id", "upn", "username"),
+                        "changes": ("id",), "services": ("servicio",)}.get(field, ())
+                key_field = next((key for key in keys if isinstance(row, dict) and row.get(key)), None)
+                duplicate = key_field and isinstance(row, dict) and row.get(key_field) and any(
+                    isinstance(previous, dict) and previous.get(key_field) == row[key_field] for previous in current)
+                if not duplicate and row not in current:
+                    current.append(row)
+                    changed |= field != "missing_lookups"
+        # Un activo resuelto por IP puede descubrir también su hostname, y viceversa.
+        resolved = self.investigator._known_identifiers({}, context, [])
+        for kind in groups:
+            looked_up[kind].update(resolved[kind])
+        return changed
 
     def run_batch(self, alert_ids: list[str],
                   on_event: Callable[[dict[str, Any]], None] | None = None) -> list[Ticket]:
