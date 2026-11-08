@@ -273,3 +273,116 @@ def test_five_real_alerts_through_orchestrator(setup_service, official_api, suff
         assert ticket.verdict == "needs_more_info" and not details["analysis"]["signals"]["personal_data_exposure"]
         assert any(a["hostname"] == "CI-RUNNER01" for a in details["context"]["assets"])
         assert {a.action for a in ticket.recommended_actions} >= {"verify_authorization", "review_classification"}
+
+
+@pytest.mark.parametrize("expected_runbook", [f"RB-{i:02d}" for i in range(1, 11)])
+def test_all_ten_runbooks_coherence_end_to_end(setup_service, official_api, expected_runbook):
+    api, store, service = setup_service
+    alert = next(a for a in official_api.ALERTS.values() if a["runbook"] == expected_runbook)
+    alert_id = alert["alert_id"]
+
+    class CoherentReplayLLM:
+        def generate_json(self, *, schema, prompt, **kwargs):
+            if schema is SearchPlan:
+                return SearchPlan(searches=[])
+            refs = alert["related_events"][:1]
+            return analysis(
+                [Finding(statement="Evidencia original verificada.", evidence_ids=refs)],
+                verdict="true_positive",
+                signals=signals(execution_or_access_confirmed=True),
+            )
+
+    service.investigator.llm = CoherentReplayLLM()
+    ticket = service.run(alert_id)
+    saved = store.get(ticket.ticket_id)
+    assert saved is not None
+    assert alert_id in ticket.alert_ids
+    plan = service.runbooks.get_strategy(expected_runbook).build_plan(alert)
+    assert plan.runbook_id == expected_runbook
+    # Comprobar que la cobertura de runbook traduce comprobaciones a fuentes reales de cada estrategia
+    checks = service.investigator.search_diagnostics["checks"]
+    assert any(c.get("source") in plan.suggested_sources for c in checks)
+
+
+def test_extended_signal_anchors_for_ad_pos_cicd_and_s3_crm():
+    ad_ev = event("ad_events", "ADE-0000571", dc="DC01", event_code=4728, subject="adm_jgarcia", target="svc_backup_temp", details={"group": "Domain Admins"})
+    ad_res = InvestigationAgent._sanitize_analysis(
+        analysis=analysis([Finding(statement="Cambio en grupo privilegiado AD.", evidence_ids=["ADE-0000571"])],
+                          signals=signals(execution_or_access_confirmed=True, persistence=True)),
+        alert={}, context=ContextSnapshot(), evidence=[ad_ev],
+    )
+    assert ad_res.signals.execution_or_access_confirmed and ad_res.signals.persistence
+
+    pos_ev = event("edr_events", "EDR-0123439", hostname="TPV-MAD04-02", event_type="process_access",
+                   process_name="diag_helper.exe", details={"target_process": "TarviaPOS.exe", "access": "PROCESS_VM_READ"})
+    pos_res = InvestigationAgent._sanitize_analysis(
+        analysis=analysis([Finding(statement="Lectura de memoria sobre proceso TPV.", evidence_ids=["EDR-0123439"])],
+                          signals=signals(malicious_execution=True, sensitive_or_payment_data=True)),
+        alert={}, context=ContextSnapshot(), evidence=[pos_ev],
+    )
+    assert pos_res.signals.malicious_execution and pos_res.signals.sensitive_or_payment_data
+
+    ci_ev = event("cicd_builds", "CI-0000602", runner="CI-RUNNER01", status="ok",
+                  details={"command": "node scripts/postinstall.js", "env_accessed": ["AWS_SECRET_ACCESS_KEY", "NPM_TOKEN"]})
+    ci_res = InvestigationAgent._sanitize_analysis(
+        analysis=analysis([Finding(statement="Script postinstall accedió a secretos del runner.", evidence_ids=["CI-0000602"])],
+                          signals=signals(malicious_execution=True, credentials_compromised=True)),
+        alert={}, context=ContextSnapshot(), evidence=[ci_ev],
+    )
+    assert ci_res.signals.malicious_execution and ci_res.signals.credentials_compromised
+
+    s3_ev = event("cloudtrail", "CT-0083606", eventName="GetObject", errorCode="",
+                  requestParameters={"bucketName": "tarvia-db-backups", "key": "prod/CRM_PROD_20261005.bak.gz"})
+    s3_res = InvestigationAgent._sanitize_analysis(
+        analysis=analysis([Finding(statement="Descarga de backup CRM en S3.", evidence_ids=["CT-0083606"])],
+                          signals=signals(sensitive_or_payment_data=True, personal_data_exposure=True)),
+        alert={}, context=ContextSnapshot(), evidence=[s3_ev],
+    )
+    assert s3_res.signals.sensitive_or_payment_data and s3_res.signals.personal_data_exposure
+
+
+def test_soc_api_client_rejects_html_or_invalid_catalog_json(monkeypatch):
+    from unittest.mock import MagicMock
+    from src.data.soc_api_client import SOCAPIClient
+
+    client = SOCAPIClient("http://127.0.0.1:8501")
+    html_resp = MagicMock()
+    html_resp.status_code = 200
+    html_resp.raise_for_status.return_value = None
+    html_resp.json.side_effect = ValueError("Expecting value: line 1 column 1 (char 0)")
+
+    monkeypatch.setattr(client.session, "get", lambda *a, **kw: html_resp)
+    with pytest.raises(ConnectionError, match="Respuesta no JSON"):
+        client.list_alerts()
+
+    wrong_shape_resp = MagicMock()
+    wrong_shape_resp.status_code = 200
+    wrong_shape_resp.raise_for_status.return_value = None
+    wrong_shape_resp.json.return_value = {"status": "ok"}
+
+    monkeypatch.setattr(client.session, "get", lambda *a, **kw: wrong_shape_resp)
+    with pytest.raises(ConnectionError, match="Respuesta de catálogo inválida"):
+        client.list_alerts()
+    client.close()
+
+
+def test_ensure_local_soc_api_corrects_streamlit_port_collision_and_discovers_fallback(monkeypatch):
+    import src.data.soc_api_client as soc_mod
+    import src.interficie.dashboard as dash_mod
+
+    soc_mod._LOCAL_API_STATE.clear()
+    monkeypatch.setattr(soc_mod, "is_soc_api_healthy", lambda url, timeout=1.5: url == "http://127.0.0.1:8001")
+    monkeypatch.setattr(dash_mod, "_is_soc_api_healthy", lambda url, timeout=1.5: url == "http://127.0.0.1:8001")
+
+    assert soc_mod.ensure_local_soc_api("http://test-soc", auto_start=False) == "http://test-soc"
+    assert dash_mod.ensure_local_soc_api("http://test-soc", auto_start=False) == "http://test-soc"
+
+    # Si SOC_API_URL apunta por error al puerto 8501 de Streamlit, redirige a la API SOC sana (8000/8001)
+    assert soc_mod.ensure_local_soc_api("http://127.0.0.1:8501", avoid_port=8501, auto_start=False) == "http://127.0.0.1:8001"
+    assert dash_mod.ensure_local_soc_api("http://127.0.0.1:8501", avoid_port=8501, auto_start=False) == "http://127.0.0.1:8001"
+
+    monkeypatch.setattr(soc_mod, "is_soc_api_healthy", lambda url, timeout=1.5: False)
+    monkeypatch.setattr(dash_mod, "_is_soc_api_healthy", lambda url, timeout=1.5: False)
+    assert soc_mod.ensure_local_soc_api("http://127.0.0.1:8501", avoid_port=8501, auto_start=False) == "http://127.0.0.1:8000"
+    assert dash_mod.ensure_local_soc_api("http://127.0.0.1:8501", avoid_port=8501, auto_start=False) == "http://127.0.0.1:8000"
+

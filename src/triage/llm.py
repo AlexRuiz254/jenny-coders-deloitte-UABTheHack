@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import time
 from pathlib import Path
 from typing import Any, TypeVar
@@ -125,9 +126,10 @@ class LLMClient:
             }
 
             raw_content = self._request_completion(payload)
+            cleaned_content = self._clean_json_text(raw_content)
 
             try:
-                parsed_json = json.loads(raw_content)
+                parsed_json = json.loads(cleaned_content)
                 if not isinstance(parsed_json, dict):
                     raise ValueError(
                         f"Se esperaba un objeto JSON (dict), pero se recibió {type(parsed_json).__name__}."
@@ -161,6 +163,24 @@ class LLMClient:
             f"La respuesta del modelo no cumple el esquema Pydantic '{schema.__name__}' "
             f"tras 2 intentos. Último error: {last_error}"
         ) from last_error
+
+    @staticmethod
+    def _clean_json_text(raw_content: str) -> str:
+        """Elimina bloques <think>...</think> o cercas Markdown externas si el gateway los incluye."""
+        cleaned = re.sub(
+            r"^\s*<think>.*?</think>\s*",
+            "",
+            raw_content,
+            flags=re.DOTALL | re.IGNORECASE,
+        ).strip()
+        fenced = re.match(
+            r"^```(?:json)?\s*(.*?)\s*```$",
+            cleaned,
+            flags=re.DOTALL | re.IGNORECASE,
+        )
+        if fenced:
+            return fenced.group(1).strip()
+        return cleaned
 
     @staticmethod
     def _load_system_prompt(system_prompt: str | Path) -> str:
