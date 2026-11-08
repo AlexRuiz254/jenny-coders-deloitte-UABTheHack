@@ -435,13 +435,21 @@ class InvestigationAgent:
         if source == "waf":
             return "success" if action == "allowed" and str(raw.get("status", "")).startswith("2") else "unknown"
         if source == "edr_events":
-            return "execution" if raw.get("event_type") == "process_start" else "unknown"
+            return "execution" if raw.get("event_type") in {
+                "process_start", "process_access", "service_install", "registry_set", "driver_load"
+            } else "unknown"
         if source == "email":
             return "delivered" if action == "delivered" else "unknown"
         if source == "email_clicks":
             return "interaction" if action == "allowed" else "unknown"
         if source == "proxy":
             return "success" if action == "allowed" and str(raw.get("status", "")).startswith("2") else "unknown"
+        if source == "firewall":
+            return "success" if action in {"allow", "allowed"} else "unknown"
+        if source == "vpn":
+            return "success" if action == "connect" else "unknown"
+        if source == "cicd_builds":
+            return "execution" if raw.get("status") == "ok" else "unknown"
         if source == "cloudtrail":
             if raw.get("errorCode"):
                 return "failure"
@@ -520,9 +528,13 @@ class InvestigationAgent:
         """Anclas estructuradas mínimas para las señales propuestas; no crean un veredicto."""
         support = set()
         executions = [ev for ev in events if cls._get_event_outcome(ev) == "execution"]
-        accesses = [ev for ev in events if ev.source in {"idp_signins", "ecom_auth", "cloudtrail"}
+        accesses = [ev for ev in events if ev.source in {"idp_signins", "ecom_auth", "cloudtrail", "vpn", "firewall"}
                     and cls._get_event_outcome(ev) == "success"]
-        if executions or accesses:
+        if executions or accesses or any(
+            ev.source == "ad_events" and str(ev.raw.get("event_code", "")) in {"4720", "4728", "4732", "4756"}
+            or ev.source == "sql_audit" and int(ev.raw.get("rows_returned") or 0) > 0
+            for ev in events
+        ):
             support.add("execution_or_access_confirmed")
         if any(ev in events for ev in cls._phishing_clicks(alert, evidence)):
             support.add("click")
@@ -542,10 +554,16 @@ class InvestigationAgent:
             raw = ev.raw
             command = str(raw.get("command_line", "")).casefold()
             details = raw.get("details") if isinstance(raw.get("details"), dict) else {}
-            command += " " + str(details.get("decoded", "")).casefold()
+            command += " " + str(details.get("decoded", "")).casefold() + " " + str(details).casefold()
+            proc = str(raw.get("process_name", "")).casefold()
             if (str(raw.get("sha256", "")).casefold() in malicious_indicators
                     or "downloadstring" in command and ("iex" in command or "invoke-expression" in command)
-                    or details.get("detection") and details.get("action") == "detected_only"):
+                    or details.get("detection") and details.get("action") == "detected_only"
+                    or ("vssadmin" in proc or "vssadmin" in command) and "delete" in command and "shadows" in command
+                    or "sc.exe" in proc and "stop" in command and "edr" in command
+                    or ("curl" in command or "wget" in command) and ("| bash" in command or "| sh" in command)
+                    or "psexesvc" in proc
+                    or "comsvcs.dll" in command and "minidump" in command):
                 support.add("malicious_execution")
         for ev in events:
             raw = ev.raw
@@ -554,13 +572,35 @@ class InvestigationAgent:
                 target = str(details.get("target_process", details.get("target", ""))).casefold()
                 if "lsass" in target or "credential" in str(details).casefold():
                     support.add("credentials_compromised")
+                if "tarviapos" in target and str(details.get("access", "")).upper() == "PROCESS_VM_READ":
+                    support.add("malicious_execution")
+                    support.add("sensitive_or_payment_data")
             if (ev.source == "edr_events" and (
                     raw.get("event_type") == "registry_set" and (details.get("key") or details.get("persistence"))
                     or raw.get("event_type") == "service_install" and details.get("service_name"))
                     or ev.source == "idp_audit" and raw.get("operation") in {"New-InboxRule", "Consent to application", "Add-MfaMethod"}
+                    or ev.source == "ad_events" and str(raw.get("event_code", "")) in {"4720", "4728", "4732", "4756"}
                     or ev.source == "cloudtrail" and raw.get("eventName") in {"CreateUser", "CreateAccessKey", "AttachUserPolicy"}
                     and cls._get_event_outcome(ev) == "success"):
                 support.add("persistence")
+            if ev.source == "cicd_builds":
+                ci_text = str(details).casefold()
+                if any(secret in ci_text for secret in ("aws_secret_access_key", "npm_token", "secret")):
+                    support.add("credentials_compromised")
+                    support.add("malicious_execution")
+            if ev.source == "cloudtrail" and raw.get("eventName") == "GetObject" and cls._get_event_outcome(ev) == "success":
+                req_text = str(raw.get("requestParameters", "")).casefold()
+                if any(term in req_text for term in ("crm", "customer", "client", "backup", "pii")):
+                    support.add("sensitive_or_payment_data")
+                    support.add("personal_data_exposure")
+            if ev.source == "sql_audit" and int(raw.get("rows_returned") or 0) > 0:
+                sql_text = f"{raw.get('database', '')} {raw.get('object', '')}".casefold()
+                if any(term in sql_text for term in ("crm", "client", "customer", "pago", "tarjeta", "iban", "nomina")):
+                    support.add("sensitive_or_payment_data")
+            if ev.source == "email":
+                mail_text = f"{raw.get('subject', '')} {raw.get('body_excerpt', '')}".casefold()
+                if "iban" in mail_text:
+                    support.add("sensitive_or_payment_data")
             # Una política pública no acredita el contenido ni una descarga de datos personales.
             pii_matches = raw.get("matches") if isinstance(raw.get("matches"), dict) else {}
             if ev.source == "dlp" and any(pii_matches.get(key) for key in ("dni_nie", "iban", "email_address", "phone_es")):
@@ -730,29 +770,42 @@ class InvestigationAgent:
             source, kinds = None, ()
             if "click" in check and "post_click" not in check:
                 source, kinds = "email_clicks", ("message", "user")
-            elif "recipient_scope" in check or "message_delivery" in check or "historical_legitimate" in check:
+            elif any(word in check for word in ("recipient_scope", "message_delivery", "historical_legitimate", "external_email_recipient")):
                 source, kinds = "email", ("message", "user", "domain")
             elif any(word in check for word in ("post_signin_audit", "session_actions", "session_persistence", "mailbox", "oauth")):
                 source, kinds = "idp_audit", ("user", "session", "ip")
-            elif any(word in check for word in ("signins", "authentication_history", "targeted_accounts", "customer_logins")):
+            elif any(word in check for word in ("signins", "authentication_history", "targeted_accounts", "customer_logins", "customer_authentication", "authenticated_customer")):
                 source = "ecom_auth" if "customer" in check else "idp_signins"
                 kinds = ("ip", "user", "session") if alert.get("rule_id") == "UC-IDP-002" else ("user", "customer", "ip")
-            elif any(word in check for word in ("c2_network", "network_activity", "post_detection_network", "post_click_proxy", "network_connections")):
-                source, kinds = "proxy", ("host", "ip", "user")
-            elif any(word in check for word in ("persistence_mechanisms", "process_tree", "endpoint_execution", "file_download_and_execution")):
+            elif any(word in check for word in ("c2_network", "network_activity", "post_detection_network", "post_click_proxy", "network_connections", "cloud_storage_upload")):
+                source, kinds = "proxy", ("host", "ip", "user", "domain")
+            elif any(word in check for word in (
+                "persistence_mechanisms", "process_tree", "endpoint_execution", "file_download_and_execution",
+                "endpoint_file_staging", "activity_on_source_host", "process_in_edr", "c2_channel_process", "postinstall_script",
+            )):
                 source, kinds = "edr_events", ("host", "user")
-            elif "backend_exploitation" in check:
-                source, kinds = "sql_audit", ("host", "resource")
+            elif "backend_exploitation" in check or "sql_queries" in check:
+                source, kinds = "sql_audit", ("user", "host", "resource") if "sql_queries" in check else ("host", "resource")
             elif "waf_action" in check or "inbound_waf" in check:
                 source, kinds = "waf", ("ip", "domain")
             elif "post_login" in check or "account_takeover" in check:
                 source, kinds = "ecom_account", ("customer",)
             elif any(word in check for word in ("bucket_access", "s3_get_object", "bucket_acl")):
                 source, kinds = "cloudtrail", ("resource", "key", "user")
-            elif any(word in check for word in ("access_key_baseline", "subsequent_iam", "cloud_persistence", "cloud_reconnaissance")):
-                source, kinds = "cloudtrail", ("key", "resource", "user")
-            elif "terraform_pipeline" in check:
-                source, kinds = "cicd_builds", ("host", "build")
+            elif any(word in check for word in ("access_key_baseline", "subsequent_iam", "cloud_persistence", "cloud_reconnaissance", "aws_credential_usage")):
+                source, kinds = "cloudtrail", ("key", "resource", "user", "ip")
+            elif "terraform_pipeline" in check or "ci_runner01_postinstall" in check:
+                source, kinds = "cicd_builds", ("build", "host")
+            elif "active_directory_privileged_group" in check:
+                source, kinds = "ad_events", ("user", "host", "ip")
+            elif "third_party_vpn" in check:
+                source, kinds = "vpn", ("user", "ip")
+            elif "ai_session" in check or "other_sessions_from_same_customer" in check:
+                source, kinds = "ai_gateway", ("session", "customer", "ip")
+            elif any(word in check for word in ("traffic_to_logistics_ot", "outbound_firewall", "port_scan_scope", "lateral_movement_smb")):
+                source, kinds = "firewall", ("ip",)
+            elif "dga_domain" in check or "dns_tunneling" in check:
+                source, kinds = "dns", ("host", "ip", "domain")
             if source is None or source not in plan.suggested_sources and source != "email_clicks":
                 coverage.append({"check": check, "status": "pending", "limitation": "Requiere interpretación del contexto, evidencia específica o revisión manual."})
                 continue

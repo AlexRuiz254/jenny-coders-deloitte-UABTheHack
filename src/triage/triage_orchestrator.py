@@ -343,24 +343,29 @@ def create_orchestrator(api: SOCAPIClient, store: SQLiteTicketRepository,
 def _main() -> None:
     """Conectar componentes reales para ejecutar una alerta desde la terminal."""
     import argparse
+    import os
     from pathlib import Path
+    from dotenv import load_dotenv
+    from src.data.soc_api_client import ensure_local_soc_api
+
+    project_root = Path(__file__).resolve().parents[2]
+    load_dotenv(project_root / ".env")
 
     parser = argparse.ArgumentParser(description="Ejecutar el triaje SOC de una alerta")
     parser.add_argument("alert_id")
-    parser.add_argument("--api-url", default="http://localhost:8000")
+    parser.add_argument("--api-url", default=None)
     parser.add_argument(
         "--dataset-root", type=Path,
-        default=Path(__file__).resolve().parents[2] / "RepositoriDeloitte"
+        default=project_root / "RepositoriDeloitte"
     )
     parser.add_argument(
         "--db-path", help="Ruta SQLite; por defecto tickets.sqlite3 del proyecto"
     )
     args = parser.parse_args()
 
-    from dotenv import load_dotenv
-    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
-    store = SQLiteTicketRepository(db_path=args.db_path)
-    api = SOCAPIClient(base_url=args.api_url, store=store)
+    store = SQLiteTicketRepository(db_path=args.db_path or os.getenv("SOC_DB_PATH") or None)
+    api_url = ensure_local_soc_api(args.api_url or os.getenv("SOC_API_URL") or "http://127.0.0.1:8000")
+    api = SOCAPIClient(base_url=api_url, store=store)
     try:
         service = create_orchestrator(api, store, args.dataset_root)
         ticket = service.run(args.alert_id)

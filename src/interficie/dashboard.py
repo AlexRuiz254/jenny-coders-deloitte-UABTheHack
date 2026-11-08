@@ -1,9 +1,15 @@
 """Panel SOC N1: presentación del orquestador y de los resultados persistidos."""
+import atexit
 import json
 import logging
 import os
 from pathlib import Path
+import socket
+import subprocess
 import sys
+import threading
+import time
+from urllib.parse import urlsplit
 
 # Streamlit ejecuta este fichero como script, también desde otro directorio.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -11,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from dotenv import load_dotenv
+import requests
 import streamlit as st
 
 from src.data.reference_repository import ReferenceRepository
@@ -22,6 +29,9 @@ from src.triage.output.validation import validate_ticket
 from src.triage.triage_orchestrator import create_orchestrator
 
 logger = logging.getLogger(__name__)
+_LOCAL_API_LOCK = threading.Lock()
+_LOCAL_API_STATE = sys.modules.setdefault("_tarvia_local_soc_api", {})
+
 SEVERITIES = ["informational", "low", "medium", "high", "critical"]
 VERDICTS = ["true_positive", "benign_true_positive", "false_positive", "needs_more_info"]
 REVIEWS = {"close": "Confirmar cierre", "reject_close": "Rechazar cierre",
@@ -34,13 +44,122 @@ STAGES = {
     "enrich_intel": "Consultar TIP, GeoIP y sandbox",
     "collect_related_events": "Recuperar eventos de la alerta",
     "find_related_alerts": "Correlacionar alertas en ±24 h",
+    "enrich_discovered": "Ampliar contexto de entidades descubiertas",
     "plan_searches": "Planificar búsquedas con IA", "search_evidence": "Consultar logs",
+    "plan_followup_searches": "Planificar segunda ronda de búsquedas",
+    "search_followup_evidence": "Ejecutar consultas de seguimiento",
+    "investigation_coverage": "Evaluar cobertura del runbook",
     "analyze": "Analizar evidencias con IA", "decide_verdict": "Validar veredicto",
     "calculate_severity": "Aplicar matriz de severidad", "decide_escalation": "Determinar escalado",
     "recommend_actions": "Revisar recomendaciones y permisos", "build_ticket": "Construir ticket",
     "validate_ticket": "Validar esquema oficial", "save_ticket": "Guardar ticket",
     "completed": "Ticket guardado", "already_processed": "Ticket existente recuperado",
 }
+
+
+def _streamlit_port() -> int:
+    try:
+        return int(st.get_option("server.port") or 8501)
+    except Exception:
+        return 8501
+
+
+def _is_local_url(raw_url: str) -> bool:
+    parts = urlsplit((raw_url or "").strip())
+    return parts.scheme in {"http", "https"} and (parts.hostname or "").lower() in {"127.0.0.1", "localhost", "::1"}
+
+
+def _is_soc_api_healthy(base_url: str, timeout: float = 1.5) -> bool:
+    try:
+        resp = requests.get(f"{base_url.rstrip('/')}/alerts", params={"limit": 1}, timeout=timeout)
+        if resp.status_code != 200:
+            return False
+        payload = resp.json()
+        return (
+            isinstance(payload, dict)
+            and isinstance(payload.get("items"), list)
+            and isinstance(payload.get("total"), int)
+        )
+    except Exception:
+        return False
+
+
+def _is_port_free(host: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.3)
+        return sock.connect_ex((host, port)) != 0
+
+
+def ensure_local_soc_api(raw_url: str, *, avoid_port: int | None = None, auto_start: bool = True) -> str:
+    """Resolver URL local de la API SOC, corrigiendo colisiones con Streamlit y arrancando run_server.py si falta."""
+    url = (raw_url or "http://127.0.0.1:8000").strip().rstrip("/")
+    if not _is_local_url(url):
+        return url
+
+    parts = urlsplit(url)
+    port = parts.port or (443 if parts.scheme == "https" else 80)
+    if (avoid_port is not None and port == avoid_port) or 8501 <= port <= 8510:
+        corrected = 8000 if avoid_port != 8000 else 8001
+        logger.warning("SOC_API_URL (%s) apuntaba a un puerto de Streamlit (%d); usando %d.", url, port, corrected)
+        port = corrected
+
+    candidate = f"http://127.0.0.1:{port}"
+    if _is_soc_api_healthy(candidate):
+        return candidate
+
+    cached_url = _LOCAL_API_STATE.get("url")
+    if isinstance(cached_url, str) and _is_soc_api_healthy(cached_url, timeout=0.8):
+        return cached_url
+
+    for fallback_port in (8000, 8001):
+        if fallback_port != avoid_port and fallback_port != port:
+            fallback_url = f"http://127.0.0.1:{fallback_port}"
+            if _is_soc_api_healthy(fallback_url, timeout=0.8):
+                return fallback_url
+
+    if not auto_start:
+        return candidate
+
+    server_script = PROJECT_ROOT / "run_server.py"
+    mock_api = PROJECT_ROOT / "RepositoriDeloitte/06_herramientas/mock_soc_api.py"
+    if not server_script.is_file() or not mock_api.is_file():
+        return candidate
+
+    with _LOCAL_API_LOCK:
+        if _is_soc_api_healthy(candidate, timeout=0.8):
+            return candidate
+        spawn_port = port
+        if not _is_port_free("127.0.0.1", spawn_port):
+            spawn_port = next(
+                (p for p in (8000, 8001, 8002, 8003) if p != avoid_port and _is_port_free("127.0.0.1", p)),
+                spawn_port,
+            )
+        spawn_url = f"http://127.0.0.1:{spawn_port}"
+        if _is_soc_api_healthy(spawn_url, timeout=0.5):
+            _LOCAL_API_STATE["url"] = spawn_url
+            return spawn_url
+
+        logger.info("Iniciando automáticamente API SOC local en %s", spawn_url)
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        proc = subprocess.Popen(
+            [sys.executable, str(server_script), "--port", str(spawn_port)],
+            cwd=str(PROJECT_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=creationflags,
+        )
+        _LOCAL_API_STATE["process"] = proc
+        atexit.register(lambda p=proc: p.terminate() if p.poll() is None else None)
+
+        deadline = time.monotonic() + 12.0
+        while time.monotonic() < deadline:
+            if _is_soc_api_healthy(spawn_url, timeout=1.0):
+                _LOCAL_API_STATE["url"] = spawn_url
+                return spawn_url
+            if proc.poll() is not None:
+                break
+            time.sleep(0.2)
+    return candidate
 
 
 @st.cache_data(ttl=300, show_spinner="Consultando catálogo de alertas…")
@@ -142,8 +261,14 @@ def render_queue(api, store, index, service=None) -> None:
                 and (not rule or rule.casefold() in (a["rule_id"] + a["rule_name"]).casefold())
                 and (source == "Todas" or a["source"] == source)
                 and (state == "Todos" or (a["alert_id"] in failures) == (state == "Fallida"))]
-    filtered.sort(key=lambda a: SEVERITIES.index(a["severity"]) if order == "Severidad" else a["created_at"],
-                  reverse=order != "Más antiguas")
+    filtered.sort(
+        key=lambda a: (
+            SEVERITIES.index(a["severity"])
+            if order == "Severidad" and a.get("severity") in SEVERITIES
+            else a.get("created_at", "")
+        ),
+        reverse=order != "Más antiguas",
+    )
     c1, c2 = st.columns(2)
     size = c1.selectbox("Alertas por página", [25, 50, 100], index=1)
     pages = max(1, (len(filtered) + size - 1) // size)
@@ -153,7 +278,7 @@ def render_queue(api, store, index, service=None) -> None:
     st.dataframe([{"ID alerta": a["alert_id"], "Fecha UTC": a["created_at"], "Regla": a["rule_name"],
                    "ID regla": a["rule_id"], "Severidad": a["severity"],
                    "Estado": "Fallida" if a["alert_id"] in failures else "Pendiente",
-                   "Fuente": a["source"]} for a in visible], hide_index=True, use_container_width=True)
+                   "Fuente": a["source"]} for a in visible], hide_index=True, width="stretch")
     options = [a["alert_id"] for a in visible]
     if st.button("Seleccionar las primeras diez", disabled=not options):
         st.session_state["queue_selection"] = options[:10]
@@ -165,7 +290,7 @@ def render_queue(api, store, index, service=None) -> None:
     if failures:
         with st.expander("Procesamientos fallidos y reintentos"):
             st.dataframe([{k: row[k] for k in ("alert_id", "stage", "error", "updated_at")} for row in failures.values()],
-                         hide_index=True, use_container_width=True)
+                         hide_index=True, width="stretch")
             st.caption("Selecciona de nuevo la alerta fallida para reintentar. Los tickets anteriores se conservan.")
 
 
@@ -187,7 +312,7 @@ def render_ticket(ticket: Ticket, details=None, trace=None) -> None:
     st.write(ticket.escalation.reason or "Sin motivo de escalado registrado.")
     with st.expander("Investigación y evidencias", expanded=True):
         st.caption("Las referencias permiten contrastar los hallazgos. Las señales son afirmaciones de la IA pendientes de revisión humana.")
-        st.dataframe([e.model_dump(exclude_none=True) for e in ticket.evidence], hide_index=True, use_container_width=True)
+        st.dataframe([e.model_dump(exclude_none=True) for e in ticket.evidence], hide_index=True, width="stretch")
         if details.get("analysis"):
             st.markdown("**Hallazgos de la investigación**")
             for finding in details["analysis"]["findings"]:
@@ -205,7 +330,7 @@ def render_ticket(ticket: Ticket, details=None, trace=None) -> None:
             st.caption("Compartir una entidad no demuestra que pertenezcan a la misma intrusión.")
         if ticket.enrichment:
             st.markdown("**Inteligencia consultada**")
-            st.dataframe([e.model_dump() for e in ticket.enrichment], hide_index=True, use_container_width=True)
+            st.dataframe([e.model_dump() for e in ticket.enrichment], hide_index=True, width="stretch")
         if details.get("context"):
             with st.expander("Contexto recuperado de activos, usuarios y cambios"):
                 st.json(details["context"])
@@ -218,11 +343,15 @@ def render_ticket(ticket: Ticket, details=None, trace=None) -> None:
     if not ticket.open_questions:
         st.caption("No se registraron preguntas pendientes.")
     st.markdown("**Respuesta recomendada**")
-    st.dataframe([a.model_dump(exclude_none=True) for a in ticket.recommended_actions], hide_index=True, use_container_width=True)
+    st.dataframe([a.model_dump(exclude_none=True) for a in ticket.recommended_actions], hide_index=True, width="stretch")
     st.caption("El nivel 1 registra recomendaciones y decisiones humanas. Ninguna acción de contención se ejecuta desde este panel.")
     with st.expander("Trazabilidad: etapas y consultas"):
         if trace:
-            st.dataframe(trace, hide_index=True, use_container_width=True)
+            safe_trace = [
+                {k: json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v for k, v in row.items()}
+                for row in trace
+            ]
+            st.dataframe(safe_trace, hide_index=True, width="stretch")
         else:
             st.info("El ticket importado no incluye historial de investigación.")
         if details.get("search_plan"):
@@ -271,7 +400,7 @@ def render_processed(store, api, service=None) -> None:
                    "Veredicto": r["details"]["ticket"]["verdict"], "Confianza": r["details"]["ticket"]["confidence"],
                    "Severidad": r["details"]["ticket"]["severity"], "Escalar": r["details"]["ticket"]["escalation"]["escalate"],
                    "Revisión": REVIEWS.get(r["review"]["decision"], "Pendiente"),
-                   "Origen": r["details"].get("source", "Anterior")} for r in records], hide_index=True, use_container_width=True)
+                   "Origen": r["details"].get("source", "Anterior")} for r in records], hide_index=True, width="stretch")
     ids = [r["id"] for r in records]
     selected = st.multiselect("Tickets para exportar", ids)
     if selected:
@@ -294,7 +423,8 @@ def render_processed(store, api, service=None) -> None:
         st.caption("Crea un ticket nuevo y conserva el resultado y la revisión anteriores.")
         confirmed = st.checkbox("Crear una nueva investigación conservando la anterior")
         if st.button("Reprocesar alerta", disabled=not confirmed):
-            process_selection([record["alert_id"]], api, store, service, reprocess=True)
+            target_alert_id = record.get("alert_id") or ticket.alert_ids[0]
+            process_selection([target_alert_id], api, store, service, reprocess=True)
 
 
 def render_import(api, store) -> None:
@@ -326,9 +456,20 @@ def render_dashboard(api, service, store) -> None:
     complete = True
     try:
         index = [{**a, "source": "API Deloitte"} for a in load_alert_index(api.base_url)]
-    except Exception:
-        logger.warning("No se pudo consultar el catálogo de la API SOC")
+    except Exception as exc:
+        logger.warning(
+            "No se pudo consultar el catálogo de la API SOC (%s · %s: %s)",
+            api.base_url,
+            type(exc).__name__,
+            str(exc).split("\n", 1)[0][:200],
+        )
         st.warning("API SOC no disponible. Inicia la API o actualiza para reintentar. Puedes consultar tickets y revisiones guardados; las cifras de pendientes solo incluyen importaciones locales.")
+        if _is_local_url(api.base_url) and (PROJECT_ROOT / "run_server.py").is_file():
+            if st.button("Iniciar API SOC local y reintentar", type="primary"):
+                resolved_url = ensure_local_soc_api(api.base_url, avoid_port=_streamlit_port(), auto_start=True)
+                os.environ["SOC_API_URL"] = resolved_url
+                load_alert_index.clear()
+                st.rerun()
         index, complete = [], False
     index.extend({**a, "source": "Importada"} for a in store.list_imported_alerts())
     # IDs únicos: la importación ya impide duplicados, también proteger la vista.
@@ -350,7 +491,7 @@ def render_dashboard(api, service, store) -> None:
             rows = st.session_state["batch_results"]
             success = sum(r["Resultado"] == "Completada" for r in rows)
             st.write(f"{len(rows)} seleccionadas · {success} completadas · {len(rows) - success} fallidas")
-            st.dataframe(rows, hide_index=True, use_container_width=True)
+            st.dataframe(rows, hide_index=True, width="stretch")
             st.button("Abrir último ticket generado", disabled=not st.session_state.get("ticket_id"),
                       on_click=lambda: st.session_state.update(navigation="Tickets e investigación"))
             with st.expander("Progreso registrado"):
@@ -371,7 +512,13 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, handlers=[logging.FileHandler(log_path / "soc.log", encoding="utf-8")])
     try:
         store = TicketRepository(os.getenv("SOC_DB_PATH") or None)
-        api = SOCAPIClient(os.getenv("SOC_API_URL") or "http://127.0.0.1:8000", store=store)
+        api_url = ensure_local_soc_api(
+            os.getenv("SOC_API_URL") or "http://127.0.0.1:8000",
+            avoid_port=_streamlit_port(),
+            auto_start=True,
+        )
+        os.environ["SOC_API_URL"] = api_url
+        api = SOCAPIClient(api_url, store=store)
         try:
             render_dashboard(api, None, store)
         finally:

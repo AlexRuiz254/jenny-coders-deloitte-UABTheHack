@@ -429,3 +429,25 @@ def test_empty_response_raises_value_error(system_prompt_file: Path) -> None:
     with patch.object(client.session, "post", return_value=empty_resp):
         with pytest.raises(ValueError, match="vacía"):
             client.generate_text(system_prompt=system_prompt_file, prompt="Hola")
+
+
+def test_generate_json_accepts_markdown_fences_and_think_blocks(system_prompt_file: Path) -> None:
+    client = LLMClient(model="uncensored", api_key="test-key")
+    fenced_content = (
+        "<think>Analizando contexto SOC N1...</think>\n"
+        "```json\n"
+        + json.dumps(_valid_analysis_dict())
+        + "\n```"
+    )
+    mock_resp = _make_mock_response(content=fenced_content)
+
+    with patch.object(client.session, "post", return_value=mock_resp) as mock_post:
+        result = client.generate_json(
+            system_prompt=system_prompt_file,
+            prompt="Evidencias recopiladas...",
+            schema=Analysis,
+        )
+
+    assert isinstance(result, Analysis)
+    assert result.verdict == "true_positive"
+    assert mock_post.call_count == 1
